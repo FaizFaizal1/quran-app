@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Loop | Premium Memorization Tool</title>
+    <meta name="description" content="A premium Quran audio looping tool for memorization. Select verses, set repeats, and listen with top reciters.">
+    <!-- Google Fonts: Outfit for a modern, clean look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-background"></div>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-quran"></i>
+                <h1>Quran Loop</h1>
+            </div>
+            <p class="subtitle">Focus. Report. Memorize.</p>
+        </header>
+
+        <main>
+            <!-- Settings Card -->
+            <section class="card settings-card">
+                <h2><i class="fa-solid fa-sliders"></i> Configuration</h2>
+                
+                <div class="form-group">
+                    <label for="reciter-select">Reciter</label>
+                    <div class="select-wrapper">
+                        <select id="reciter-select">
+                            <option value="" disabled selected>Select a Reciter</option>
+                            <!-- Options injected by JS -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="surah-select">Surah</label>
+                        <div class="select-wrapper">
+                            <select id="surah-select">
+                                <option value="" disabled selected>Select Surah</option>
+                                <!-- Options injected by JS -->
+                            </select>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="form-group empty-placeholder">
+                        <!-- Spacer or future Verse Count info -->
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="start-verse">Start Verse</label>
+                        <input type="number" id="start-verse" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="end-verse">End Verse</label>
+                        <input type="number" id="end-verse" min="1" value="1">
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="verse-repeat">Repeat Verse</label>
+                        <div class="number-input">
+                            <button class="control-btn minus" data-target="verse-repeat"><i class="fa-solid fa-minus"></i></button>
+                            <input type="number" id="verse-repeat" min="1" value="1">
+                            <button class="control-btn plus" data-target="verse-repeat"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <span class="help-text">Times to play each verse</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="range-repeat">Repeat Range</label>
+                        <div class="number-input">
+                            <button class="control-btn minus" data-target="range-repeat"><i class="fa-solid fa-minus"></i></button>
+                            <input type="number" id="range-repeat" min="1" value="1">
+                            <button class="control-btn plus" data-target="range-repeat"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <span class="help-text">Times to loop the selection</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Player Card -->
+            <section class="card player-card">
+                <div class="now-playing">
+                    <h3 id="np-surah">Select Surah</h3>
+                    <p id="np-details">Verse <span id="np-verse">-</span></p>
+                    <p id="np-reciter" class="sub-text">Reciter not selected</p>
+                </div>
+
+                <div class="loop-status">
+                    <div class="status-item">
+                        <small>Verse Loop</small>
+                        <span id="status-verse-loop">1 / 1</span>
+                    </div>
+                    <div class="status-item">
+                        <small>Range Loop</small>
+                        <span id="status-range-loop">1 / 1</span>
+                    </div>
+                </div>
+
+                <!-- Custom Audio Controls -->
+                <div class="audio-controls">
+                    <button id="btn-prev" class="control-btn secondary" title="Previous Verse"><i class="fa-solid fa-backward-step"></i></button>
+                    <button id="btn-play" class="control-btn primary big" title="Play/Pause"><i class="fa-solid fa-play"></i></button>
+                    <button id="btn-stop" class="control-btn secondary" title="Stop & Reset"><i class="fa-solid fa-stop"></i></button>
+                    <button id="btn-next" class="control-btn secondary" title="Next Verse"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+
+                <audio id="audio-player" preload="auto"></audio>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
