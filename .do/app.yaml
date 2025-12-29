@@ -1,0 +1,11 @@
+name: quran-app
+region: sgp
+static_sites:
+- name: quran-app-frontend
+  source_dir: /
+  index_document: index.html
+  error_document: index.html
+  github:
+    branch: master
+    deploy_on_push: true
+    repo: FaizFaizal1/quran-app
