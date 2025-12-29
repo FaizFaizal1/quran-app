@@ -103,6 +103,7 @@ if (typeof window !== 'undefined') {
 const state = {
     reciters: [],
     chapters: [],
+    versesData: [], // [ { id: 1, text_uthmani: "...", translation: "..." } ]
 
     // Selection state
     selectedReciterId: null,
@@ -139,6 +140,9 @@ const ui = {
     npReciter: document.getElementById('np-reciter'),
     statusVerse: document.getElementById('status-verse-loop'),
     statusRange: document.getElementById('status-range-loop'),
+
+    // Verse Display
+    versesContainer: document.getElementById('verses-container'),
 
     // Controls
     btnPrev: document.getElementById('btn-prev'),
@@ -206,6 +210,70 @@ async function fetchChapters() {
     }));
 
     populateSelect(ui.surahSelect, state.chapters, 'id', 'name');
+}
+
+async function fetchVerses(surahId) {
+    ui.versesContainer.innerHTML = '<div class="verse-item placeholder"><p>Loading Verses...</p></div>';
+
+    try {
+        // Fetch Arabic (Uthmani) and Translation (Saheeh International: 131) in parallel
+        const [arabicRes, transRes] = await Promise.all([
+            fetch(`https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${surahId}`),
+            fetch(`https://api.quran.com/api/v4/quran/translations/131?chapter_number=${surahId}`)
+        ]);
+
+        const arabicData = await arabicRes.json();
+        const transData = await transRes.json();
+
+        // Merge Data
+        const arabicVerses = arabicData.verses; // [{ id: 1, verse_key: "1:1", text_uthmani: "..." }]
+        const transVerses = transData.translations; // [{ resource_id: 131, text: "..." }]
+
+        state.versesData = arabicVerses.map((v, i) => ({
+            id: v.verse_key,
+            number: i + 1,
+            text: v.text_uthmani,
+            translation: transVerses[i] ? transVerses[i].text : ""
+        }));
+
+        renderVerses();
+
+    } catch (e) {
+        console.error("Failed to fetch verses", e);
+        ui.versesContainer.innerHTML = '<div class="verse-item placeholder"><p>Error loading text.</p></div>';
+    }
+}
+
+function renderVerses() {
+    ui.versesContainer.innerHTML = '';
+
+    state.versesData.forEach(verse => {
+        const div = document.createElement('div');
+        div.className = 'verse-item';
+        div.id = `verse-${verse.number}`; // ID for scrolling
+
+        div.innerHTML = `
+            <div class="verse-header">
+                <span class="verse-number">${verse.number}</span>
+            </div>
+            <p class="verse-arabic">${verse.text}</p>
+            <p class="verse-translation">${verse.translation}</p>
+        `;
+
+        ui.versesContainer.appendChild(div);
+    });
+}
+
+function highlightVerse(verseNum) {
+    // Remove old highlight
+    document.querySelectorAll('.verse-item.active-verse').forEach(el => el.classList.remove('active-verse'));
+
+    // Add new highlight
+    const el = document.getElementById(`verse-${verseNum}`);
+    if (el) {
+        el.classList.add('active-verse');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 // --- UI Helpers ---
@@ -287,6 +355,9 @@ function handleSurahChange(surahId) {
         state.endVerse = 1;
 
         ui.npSurah.textContent = surah.name;
+
+        // Fetch Text!
+        fetchVerses(surahId);
     }
 }
 
@@ -350,6 +421,9 @@ function stopPlayback() {
 
     updatePlayButton();
     updateStatusDisplay();
+
+    // Remove Highlight
+    document.querySelectorAll('.verse-item.active-verse').forEach(el => el.classList.remove('active-verse'));
 }
 
 function playCurrentVerse() {
@@ -363,6 +437,9 @@ function playCurrentVerse() {
     const reciterName = state.reciters.find(r => r.id === state.selectedReciterId)?.name || 'Unknown';
     ui.npReciter.textContent = reciterName;
     updateStatusDisplay();
+
+    // Highlight Text
+    highlightVerse(verseNum);
 
     // Play
     const url = AppLogic.constructAudioUrl(state.selectedReciterId, state.selectedSurahId, verseNum);

@@ -341,3 +341,70 @@ select:focus, input[type="number"]:focus {
         font-size: 1.5rem;
     }
 }
+
+/* Verse Display */
+.display-card {
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) transparent;
+}
+
+.verses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.verse-item {
+    padding: 15px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: var(--transition);
+    scroll-margin-top: 100px; /* Offset for scrolling */
+}
+
+.verse-item.active-verse {
+    background: rgba(var(--primary-hue), 255, 255, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px rgba(var(--primary-hue), 255, 255, 0.1);
+}
+
+.verse-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 5px;
+}
+
+.verse-number {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.verse-arabic {
+    font-family: 'Amiri', serif; /* Or system default serif for Arabic */
+    font-size: 1.8rem;
+    text-align: right;
+    line-height: 1.8;
+    margin-bottom: 10px;
+    color: #fff;
+}
+
+.verse-translation {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.placeholder {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 40px 0;
+}
