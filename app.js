@@ -120,6 +120,7 @@ const state = {
     currentVerseIndex: 0,
     currentVerseLoopCount: 0,
     currentRangeLoopCount: 0,
+    playbackRate: 1.0, // Default Speed
 
     // Audio Object
     audio: document.getElementById('audio-player')
@@ -149,6 +150,7 @@ const ui = {
     btnPlay: document.getElementById('btn-play'),
     btnStop: document.getElementById('btn-stop'),
     btnNext: document.getElementById('btn-next'),
+    btnSpeed: document.getElementById('btn-speed'),
 
     // Increment/Decrement Buttons
     controlBtns: document.querySelectorAll('.control-btn.plus, .control-btn.minus')
@@ -306,6 +308,9 @@ function setupEventListeners() {
     ui.btnPlay.addEventListener('click', togglePlay);
     ui.btnStop.addEventListener('click', stopPlayback);
 
+    // Speed Control
+    ui.btnSpeed.addEventListener('click', toggleSpeed);
+
     // Controls +/-
     ui.controlBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -380,6 +385,18 @@ function updateRangeFromUI() {
 
 // --- Playback Logic ---
 
+function toggleSpeed() {
+    const speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
+    const currentIndex = speeds.indexOf(state.playbackRate);
+    const nextIndex = (currentIndex + 1) % speeds.length;
+
+    state.playbackRate = speeds[nextIndex];
+    ui.btnSpeed.textContent = `${state.playbackRate}x`;
+
+    // Apply immediately if playing
+    state.audio.playbackRate = state.playbackRate;
+}
+
 function togglePlay() {
     if (state.isPlaying) {
         pausePlayback();
@@ -399,6 +416,7 @@ function startPlayback() {
 
     if (state.audio.src && !state.audio.ended && state.audio.currentTime > 0) {
         state.audio.play();
+        state.audio.playbackRate = state.playbackRate; // Ensure rate is applied
     } else {
         playCurrentVerse();
     }
@@ -414,6 +432,7 @@ function stopPlayback() {
     state.isPlaying = false;
     state.audio.pause();
     state.audio.currentTime = 0;
+    state.audio.playbackRate = state.playbackRate; // Reset rate just in case
 
     state.currentVerseIndex = 0;
     state.currentVerseLoopCount = 0;
@@ -444,6 +463,7 @@ function playCurrentVerse() {
     // Play
     const url = AppLogic.constructAudioUrl(state.selectedReciterId, state.selectedSurahId, verseNum);
     state.audio.src = url;
+    state.audio.playbackRate = state.playbackRate; // Critical: Apply speed on new source
     state.audio.play();
 }
 
@@ -483,6 +503,8 @@ function handleVerseEnd() {
         if (prevVerseNum === newVerseNum) {
             state.audio.currentTime = 0;
             state.audio.play();
+            // playbackRate persists usually, but safe to re-assert if some browsers reset it
+            state.audio.playbackRate = state.playbackRate;
             updateStatusDisplay();
         } else {
             playCurrentVerse();

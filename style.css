@@ -408,3 +408,11 @@ select:focus, input[type="number"]:focus {
     font-style: italic;
     padding: 40px 0;
 }
+
+.control-btn.text-btn {
+    font-size: 0.9rem;
+    font-weight: 700;
+    width: 50px; /* Match other secondary buttons */
+    height: 50px;
+    font-family: monospace;
+}
