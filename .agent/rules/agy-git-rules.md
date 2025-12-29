@@ -1,3 +1,9 @@
+---
+trigger: always_on
+glob: "*"
+description: Enforce AGY Golden Standard Git Workflow
+---
+
 # AGY Golden Standard Rules
 
 You must follow these rules for all Git operations in this workspace:
