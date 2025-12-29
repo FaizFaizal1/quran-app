@@ -3,6 +3,102 @@
  * Logic for state management, API fetching, and audio playback.
  */
 
+// --- Business Logic (Testable) ---
+const AppLogic = {
+    /**
+     * Clamps verse range values within valid bounds.
+     * @param {number} start - Requested start verse
+     * @param {number} end - Requested end verse
+     * @param {number} max - Maximum verses in the surah
+     * @returns {Object} { start, end } - Validated values
+     */
+    validateRange: (start, end, max) => {
+        let s = start || 1;
+        let e = end || 1;
+
+        if (s < 1) s = 1;
+        if (s > max) s = max;
+
+        if (e < 1) e = 1;
+        if (e > max) e = max;
+
+        // Ensure Start <= End
+        if (s > e) e = s;
+
+        return { start: s, end: e };
+    },
+
+    /**
+     * Constructs the EveryAyah audio URL.
+     * @param {string} reciterId - The reciter's folder name
+     * @param {number|string} surahId - Surah number (1-114)
+     * @param {number|string} verseId - Verse number
+     * @returns {string} The full audio URL
+     */
+    constructAudioUrl: (reciterId, surahId, verseId) => {
+        const surahPad = String(surahId).padStart(3, '0');
+        const versePad = String(verseId).padStart(3, '0');
+        return `https://everyayah.com/data/${reciterId}/${surahPad}${versePad}.mp3`;
+    },
+
+    /**
+     * Determines the next playback state based on loop settings.
+     * @param {Object} current - { verseIndex, verseLoopCount, rangeLoopCount }
+     * @param {Object} settings - { startVerse, endVerse, verseRepeat, rangeRepeat }
+     * @returns {Object} { action: 'PLAY'|'STOP', state: { ...newCurrent } }
+     */
+    calculateNextState: (current, settings) => {
+        let { verseIndex, verseLoopCount, rangeLoopCount } = current;
+        const { startVerse, endVerse, verseRepeat, rangeRepeat } = settings;
+
+        // 1. Check Verse Loop
+        if (verseLoopCount + 1 < verseRepeat) {
+            return {
+                action: 'PLAY',
+                state: { ...current, verseLoopCount: verseLoopCount + 1 }
+            };
+        }
+
+        // Verse Loop Done, Move to Next Verse
+        const nextVerseIndex = verseIndex + 1;
+        const nextVerseNum = startVerse + nextVerseIndex;
+
+        // 2. Check Range Bounds
+        if (nextVerseNum > endVerse) {
+            // Range Finished
+            if (rangeLoopCount + 1 < rangeRepeat) {
+                // Restart Range
+                return {
+                    action: 'PLAY',
+                    state: {
+                        verseIndex: 0,
+                        verseLoopCount: 0,
+                        rangeLoopCount: rangeLoopCount + 1
+                    }
+                };
+            } else {
+                // All Done
+                return { action: 'STOP', state: current };
+            }
+        }
+
+        // 3. Just Next Verse
+        return {
+            action: 'PLAY',
+            state: {
+                verseIndex: nextVerseIndex,
+                verseLoopCount: 0,
+                rangeLoopCount: rangeLoopCount // Keep current range loop count
+            }
+        };
+    }
+};
+
+// Expose for testing if environment supports it
+if (typeof window !== 'undefined') {
+    window.AppLogic = AppLogic;
+}
+
 // --- State Management ---
 const state = {
     reciters: [],
@@ -20,7 +116,7 @@ const state = {
 
     // Runtime State
     isPlaying: false,
-    currentVerseIndex: 0, // 0-based index relative to the range
+    currentVerseIndex: 0,
     currentVerseLoopCount: 0,
     currentRangeLoopCount: 0,
 
@@ -64,10 +160,9 @@ async function init() {
             fetchChapters()
         ]);
 
-        // Setup Event Listeners after data is loaded
         setupEventListeners();
 
-        // Select first valid options by default
+        // Defaults
         if (state.reciters.length > 0) {
             ui.reciterSelect.value = state.reciters[0].id;
             state.selectedReciterId = state.reciters[0].id;
@@ -86,10 +181,8 @@ async function init() {
 // --- Data Fetching ---
 
 async function fetchReciters() {
-    // We will use a curated list of high-quality reciters compatible with EveryAyah format
-    // This ensures reliable verse-by-verse streaming without complex segmentation parsing
     const curatedReciters = [
-        { id: 'Mishary_Rashid_Alafasy_128kbps', name: 'Mishary Rashid Alafasy' },
+        { id: 'Alafasy_128kbps', name: 'Mishary Rashid Alafasy' },
         { id: 'Abdul_Basit_Murattal_192kbps', name: 'Abdul Basit (Murattal)' },
         { id: 'Abdul_Basit_Mujawwad_128kbps', name: 'Abdul Basit (Mujawwad)' },
         { id: 'Minshawy_Murattal_128kbps', name: 'Al-Minshawy (Murattal)' },
@@ -100,14 +193,12 @@ async function fetchReciters() {
 
     state.reciters = curatedReciters;
     populateSelect(ui.reciterSelect, state.reciters, 'id', 'name');
-    console.log('Reciters loaded:', state.reciters.length);
 }
 
 async function fetchChapters() {
     const response = await fetch('https://api.quran.com/api/v4/chapters');
     const data = await response.json();
 
-    // api.quran.com returns { chapters: [...] }
     state.chapters = data.chapters.map(ch => ({
         id: ch.id,
         name: `${ch.id}. ${ch.name_simple} (${ch.translated_name.name})`,
@@ -115,13 +206,12 @@ async function fetchChapters() {
     }));
 
     populateSelect(ui.surahSelect, state.chapters, 'id', 'name');
-    console.log('Chapters loaded:', state.chapters.length);
 }
 
 // --- UI Helpers ---
 
 function populateSelect(element, items, valueKey, textKey) {
-    element.innerHTML = ''; // Clear existing
+    element.innerHTML = '';
     items.forEach(item => {
         const option = document.createElement('option');
         option.value = item[valueKey];
@@ -134,7 +224,6 @@ function setupEventListeners() {
     // Dropdowns
     ui.reciterSelect.addEventListener('change', (e) => {
         state.selectedReciterId = e.target.value;
-        console.log('Reciter changed:', state.selectedReciterId);
     });
 
     ui.surahSelect.addEventListener('change', (e) => {
@@ -142,14 +231,14 @@ function setupEventListeners() {
     });
 
     // Inputs
-    ui.startVerseInput.addEventListener('change', validateRange);
-    ui.endVerseInput.addEventListener('change', validateRange);
+    ui.startVerseInput.addEventListener('change', updateRangeFromUI);
+    ui.endVerseInput.addEventListener('change', updateRangeFromUI);
 
     // Play/Pause
     ui.btnPlay.addEventListener('click', togglePlay);
     ui.btnStop.addEventListener('click', stopPlayback);
 
-    // Increment/Decrement handlers
+    // Controls +/-
     ui.controlBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const targetId = btn.getAttribute('data-target');
@@ -165,7 +254,7 @@ function setupEventListeners() {
         });
     });
 
-    // Loop Inputs
+    // Settings inputs
     ui.verseRepeatInput.addEventListener('change', (e) => {
         state.verseRepeat = parseInt(e.target.value) || 1;
     });
@@ -174,11 +263,10 @@ function setupEventListeners() {
         state.rangeRepeat = parseInt(e.target.value) || 1;
     });
 
-    // Playback Monitor
+    // Audio
     state.audio.addEventListener('ended', handleVerseEnd);
     state.audio.addEventListener('error', (e) => {
         console.error("Audio Error", e);
-        // Do not alert repeatedly in loop
         stopPlayback();
     });
 }
@@ -188,46 +276,35 @@ function handleSurahChange(surahId) {
     const surah = state.chapters.find(c => c.id === surahId);
 
     if (surah) {
-        // Update Verse Limits
         ui.startVerseInput.max = surah.verses_count;
         ui.endVerseInput.max = surah.verses_count;
 
-        // Reset Inputs
+        // Reset to Verse 1
         ui.startVerseInput.value = 1;
-        ui.endVerseInput.value = 1; // Default to verse 1
+        ui.endVerseInput.value = 1;
 
         state.startVerse = 1;
         state.endVerse = 1;
 
-        // Update UI Text
         ui.npSurah.textContent = surah.name;
     }
 }
 
-function validateRange() {
-    let start = parseInt(ui.startVerseInput.value) || 1;
-    let end = parseInt(ui.endVerseInput.value) || 1;
+function updateRangeFromUI() {
+    let start = parseInt(ui.startVerseInput.value);
+    let end = parseInt(ui.endVerseInput.value);
 
     const surah = state.chapters.find(c => c.id === state.selectedSurahId);
     const max = surah ? surah.verses_count : 114;
 
-    // Clamp values
-    if (start < 1) start = 1;
-    if (start > max) start = max;
+    const validated = AppLogic.validateRange(start, end, max);
 
-    if (end < 1) end = 1;
-    if (end > max) end = max;
+    // Update UI and State
+    ui.startVerseInput.value = validated.start;
+    ui.endVerseInput.value = validated.end;
 
-    // Ensure Start <= End
-    if (start > end) {
-        end = start;
-    }
-
-    ui.startVerseInput.value = start;
-    ui.endVerseInput.value = end;
-
-    state.startVerse = start;
-    state.endVerse = end;
+    state.startVerse = validated.start;
+    state.endVerse = validated.end;
 }
 
 // --- Playback Logic ---
@@ -249,12 +326,9 @@ function startPlayback() {
     state.isPlaying = true;
     updatePlayButton();
 
-    // If we are resumed, just play
     if (state.audio.src && !state.audio.ended && state.audio.currentTime > 0) {
         state.audio.play();
     } else {
-        // Start from beginning
-        // If we were stopped, indices are 0
         playCurrentVerse();
     }
 }
@@ -270,7 +344,6 @@ function stopPlayback() {
     state.audio.pause();
     state.audio.currentTime = 0;
 
-    // Reset loop counters
     state.currentVerseIndex = 0;
     state.currentVerseLoopCount = 0;
     state.currentRangeLoopCount = 0;
@@ -282,41 +355,17 @@ function stopPlayback() {
 function playCurrentVerse() {
     if (!state.isPlaying) return;
 
-    // Calculate current verse number
+    // Determine current verse number
     const verseNum = state.startVerse + state.currentVerseIndex;
-
-    // Check if we exceeded range
-    if (verseNum > state.endVerse) {
-        // End of range
-        state.currentRangeLoopCount++;
-
-        if (state.currentRangeLoopCount < state.rangeRepeat) {
-            // Restart range
-            state.currentVerseIndex = 0;
-            state.currentVerseLoopCount = 0;
-            playCurrentVerse();
-        } else {
-            // All Done
-            stopPlayback();
-            console.log("Range loop finished.");
-        }
-        return;
-    }
 
     // Update UI
     ui.npDetails.textContent = `Verse ${verseNum} / ${state.endVerse}`;
-    // ^ note: I used npDetails instead of creating a new npVerse element to match html
-
-    const reciterName = state.reciters.find(r => r.id === state.selectedReciterId)?.name || 'Unknown Reciter';
+    const reciterName = state.reciters.find(r => r.id === state.selectedReciterId)?.name || 'Unknown';
     ui.npReciter.textContent = reciterName;
-
     updateStatusDisplay();
 
-    // Construct URL (EveryAyah format: surah(3)verse(3).mp3)
-    const surahPad = String(state.selectedSurahId).padStart(3, '0');
-    const versePad = String(verseNum).padStart(3, '0');
-    const url = `https://everyayah.com/data/${state.selectedReciterId}/${surahPad}${versePad}.mp3`;
-
+    // Play
+    const url = AppLogic.constructAudioUrl(state.selectedReciterId, state.selectedSurahId, verseNum);
     state.audio.src = url;
     state.audio.play();
 }
@@ -324,18 +373,43 @@ function playCurrentVerse() {
 function handleVerseEnd() {
     if (!state.isPlaying) return;
 
-    state.currentVerseLoopCount++;
+    // Use AppLogic to determine next move
+    const currentState = {
+        verseIndex: state.currentVerseIndex,
+        verseLoopCount: state.currentVerseLoopCount,
+        rangeLoopCount: state.currentRangeLoopCount
+    };
 
-    if (state.currentVerseLoopCount < state.verseRepeat) {
-        // Repeat same verse
-        state.audio.currentTime = 0;
-        state.audio.play();
-        updateStatusDisplay();
+    const settings = {
+        startVerse: state.startVerse,
+        endVerse: state.endVerse,
+        verseRepeat: state.verseRepeat,
+        rangeRepeat: state.rangeRepeat
+    };
+
+    const result = AppLogic.calculateNextState(currentState, settings);
+
+    if (result.action === 'STOP') {
+        // Range finished or stop requested
+        stopPlayback();
+        console.log("Loop finished");
     } else {
-        // Move to next verse
-        state.currentVerseLoopCount = 0;
-        state.currentVerseIndex++;
-        playCurrentVerse();
+        // Apply new state
+        state.currentVerseIndex = result.state.verseIndex;
+        state.currentVerseLoopCount = result.state.verseLoopCount;
+        state.currentRangeLoopCount = result.state.rangeLoopCount;
+
+        // If we are repeating the EXACT same verse, just replay audio
+        const prevVerseNum = settings.startVerse + currentState.verseIndex;
+        const newVerseNum = settings.startVerse + state.currentVerseIndex;
+
+        if (prevVerseNum === newVerseNum) {
+            state.audio.currentTime = 0;
+            state.audio.play();
+            updateStatusDisplay();
+        } else {
+            playCurrentVerse();
+        }
     }
 }
 
@@ -357,5 +431,4 @@ function updatePlayButton() {
     }
 }
 
-// Start App
 document.addEventListener('DOMContentLoaded', init);
