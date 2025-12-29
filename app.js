@@ -156,6 +156,50 @@ const ui = {
     controlBtns: document.querySelectorAll('.control-btn.plus, .control-btn.minus')
 };
 
+// --- Persistence ---
+
+function saveSettings() {
+    const settings = {
+        reciterId: state.selectedReciterId,
+        surahId: state.selectedSurahId,
+        startVerse: state.startVerse,
+        endVerse: state.endVerse,
+        verseRepeat: state.verseRepeat,
+        rangeRepeat: state.rangeRepeat,
+        playbackRate: state.playbackRate
+    };
+    localStorage.setItem('quranLoopSettings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+    const saved = localStorage.getItem('quranLoopSettings');
+    if (saved) {
+        try {
+            const settings = JSON.parse(saved);
+            state.selectedReciterId = settings.reciterId || state.selectedReciterId;
+            state.selectedSurahId = settings.surahId || state.selectedSurahId;
+            state.startVerse = settings.startVerse || 1;
+            state.endVerse = settings.endVerse || 1;
+            state.verseRepeat = settings.verseRepeat || 1;
+            state.rangeRepeat = settings.rangeRepeat || 1;
+            state.playbackRate = settings.playbackRate || 1.0;
+
+            // Apply to UI
+            ui.startVerseInput.value = state.startVerse;
+            ui.endVerseInput.value = state.endVerse;
+            ui.verseRepeatInput.value = state.verseRepeat;
+            ui.rangeRepeatInput.value = state.rangeRepeat;
+            ui.btnSpeed.textContent = `${state.playbackRate}x`;
+            state.audio.playbackRate = state.playbackRate;
+
+            return true; // Settings loaded
+        } catch (e) {
+            console.error("Error loading settings", e);
+        }
+    }
+    return false;
+}
+
 // --- Initialization ---
 async function init() {
     console.log('Initializing Quran Loop App...');
@@ -168,14 +212,22 @@ async function init() {
 
         setupEventListeners();
 
-        // Defaults
-        if (state.reciters.length > 0) {
-            ui.reciterSelect.value = state.reciters[0].id;
-            state.selectedReciterId = state.reciters[0].id;
-        }
-        if (state.chapters.length > 0) {
-            ui.surahSelect.value = state.chapters[0].id;
-            handleSurahChange(state.chapters[0].id);
+        // Load Settings OR Defaults
+        if (loadSettings()) {
+            // Restore Selection
+            ui.reciterSelect.value = state.selectedReciterId;
+            ui.surahSelect.value = state.selectedSurahId;
+            handleSurahChange(state.selectedSurahId, false); // false = don't reset verses
+        } else {
+            // Defaults
+            if (state.reciters.length > 0) {
+                ui.reciterSelect.value = state.reciters[0].id;
+                state.selectedReciterId = state.reciters[0].id;
+            }
+            if (state.chapters.length > 0) {
+                ui.surahSelect.value = state.chapters[0].id;
+                handleSurahChange(state.chapters[0].id);
+            }
         }
 
     } catch (error) {
@@ -294,22 +346,24 @@ function setupEventListeners() {
     // Dropdowns
     ui.reciterSelect.addEventListener('change', (e) => {
         state.selectedReciterId = e.target.value;
+        saveSettings();
     });
 
     ui.surahSelect.addEventListener('change', (e) => {
         handleSurahChange(parseInt(e.target.value));
+        saveSettings();
     });
 
     // Inputs
-    ui.startVerseInput.addEventListener('change', updateRangeFromUI);
-    ui.endVerseInput.addEventListener('change', updateRangeFromUI);
+    ui.startVerseInput.addEventListener('change', () => { updateRangeFromUI(); saveSettings(); });
+    ui.endVerseInput.addEventListener('change', () => { updateRangeFromUI(); saveSettings(); });
 
     // Play/Pause
     ui.btnPlay.addEventListener('click', togglePlay);
     ui.btnStop.addEventListener('click', stopPlayback);
 
     // Speed Control
-    ui.btnSpeed.addEventListener('click', toggleSpeed);
+    ui.btnSpeed.addEventListener('click', () => { toggleSpeed(); saveSettings(); });
 
     // Controls +/-
     ui.controlBtns.forEach(btn => {
@@ -330,10 +384,12 @@ function setupEventListeners() {
     // Settings inputs
     ui.verseRepeatInput.addEventListener('change', (e) => {
         state.verseRepeat = parseInt(e.target.value) || 1;
+        saveSettings();
     });
 
     ui.rangeRepeatInput.addEventListener('change', (e) => {
         state.rangeRepeat = parseInt(e.target.value) || 1;
+        saveSettings();
     });
 
     // Audio
@@ -344,7 +400,7 @@ function setupEventListeners() {
     });
 }
 
-function handleSurahChange(surahId) {
+function handleSurahChange(surahId, resetVerses = true) {
     state.selectedSurahId = surahId;
     const surah = state.chapters.find(c => c.id === surahId);
 
@@ -352,12 +408,13 @@ function handleSurahChange(surahId) {
         ui.startVerseInput.max = surah.verses_count;
         ui.endVerseInput.max = surah.verses_count;
 
-        // Reset to Verse 1
-        ui.startVerseInput.value = 1;
-        ui.endVerseInput.value = 1;
-
-        state.startVerse = 1;
-        state.endVerse = 1;
+        if (resetVerses) {
+            // Reset to Verse 1
+            ui.startVerseInput.value = 1;
+            ui.endVerseInput.value = 1;
+            state.startVerse = 1;
+            state.endVerse = 1;
+        }
 
         ui.npSurah.textContent = surah.name;
 
