@@ -3,100 +3,9 @@
  * Logic for state management, API fetching, and audio playback.
  */
 
-// --- Business Logic (Testable) ---
-const AppLogic = {
-    /**
-     * Clamps verse range values within valid bounds.
-     * @param {number} start - Requested start verse
-     * @param {number} end - Requested end verse
-     * @param {number} max - Maximum verses in the surah
-     * @returns {Object} { start, end } - Validated values
-     */
-    validateRange: (start, end, max) => {
-        let s = start || 1;
-        let e = end || 1;
-
-        if (s < 1) s = 1;
-        if (s > max) s = max;
-
-        if (e < 1) e = 1;
-        if (e > max) e = max;
-
-        // Ensure Start <= End
-        if (s > e) e = s;
-
-        return { start: s, end: e };
-    },
-
-    /**
-     * Constructs the EveryAyah audio URL.
-     * @param {string} reciterId - The reciter's folder name
-     * @param {number|string} surahId - Surah number (1-114)
-     * @param {number|string} verseId - Verse number
-     * @returns {string} The full audio URL
-     */
-    constructAudioUrl: (reciterId, surahId, verseId) => {
-        const surahPad = String(surahId).padStart(3, '0');
-        const versePad = String(verseId).padStart(3, '0');
-        return `https://everyayah.com/data/${reciterId}/${surahPad}${versePad}.mp3`;
-    },
-
-    /**
-     * Determines the next playback state based on loop settings.
-     * @param {Object} current - { verseIndex, verseLoopCount, rangeLoopCount }
-     * @param {Object} settings - { startVerse, endVerse, verseRepeat, rangeRepeat }
-     * @returns {Object} { action: 'PLAY'|'STOP', state: { ...newCurrent } }
-     */
-    calculateNextState: (current, settings) => {
-        let { verseIndex, verseLoopCount, rangeLoopCount } = current;
-        const { startVerse, endVerse, verseRepeat, rangeRepeat } = settings;
-
-        // 1. Check Verse Loop
-        if (verseLoopCount + 1 < verseRepeat) {
-            return {
-                action: 'PLAY',
-                state: { ...current, verseLoopCount: verseLoopCount + 1 }
-            };
-        }
-
-        // Verse Loop Done, Move to Next Verse
-        const nextVerseIndex = verseIndex + 1;
-        const nextVerseNum = startVerse + nextVerseIndex;
-
-        // 2. Check Range Bounds
-        if (nextVerseNum > endVerse) {
-            // Range Finished
-            if (rangeLoopCount + 1 < rangeRepeat) {
-                // Restart Range
-                return {
-                    action: 'PLAY',
-                    state: {
-                        verseIndex: 0,
-                        verseLoopCount: 0,
-                        rangeLoopCount: rangeLoopCount + 1
-                    }
-                };
-            } else {
-                // All Done
-                return { action: 'STOP', state: current };
-            }
-        }
-
-        // 3. Just Next Verse
-        return {
-            action: 'PLAY',
-            state: {
-                verseIndex: nextVerseIndex,
-                verseLoopCount: 0,
-                rangeLoopCount: rangeLoopCount // Keep current range loop count
-            }
-        };
-    }
-};
-
-// Expose for testing if environment supports it
-if (typeof window !== 'undefined') {
-    window.AppLogic = AppLogic;
+// --- App Logic is loaded from logic.js ---
+if (typeof AppLogic === 'undefined') {
+    console.error("CRITICAL: logic.js not loaded!");
 }
 
 // --- State Management ---
@@ -159,15 +68,7 @@ const ui = {
 // --- Persistence ---
 
 function saveSettings() {
-    const settings = {
-        reciterId: state.selectedReciterId,
-        surahId: state.selectedSurahId,
-        startVerse: state.startVerse,
-        endVerse: state.endVerse,
-        verseRepeat: state.verseRepeat,
-        rangeRepeat: state.rangeRepeat,
-        playbackRate: state.playbackRate
-    };
+    const settings = AppLogic.createSettingsObject(state);
     localStorage.setItem('quranLoopSettings', JSON.stringify(settings));
 }
 
@@ -443,11 +344,7 @@ function updateRangeFromUI() {
 // --- Playback Logic ---
 
 function toggleSpeed() {
-    const speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
-    const currentIndex = speeds.indexOf(state.playbackRate);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-
-    state.playbackRate = speeds[nextIndex];
+    state.playbackRate = AppLogic.calculateNextSpeed(state.playbackRate);
     ui.btnSpeed.textContent = `${state.playbackRate}x`;
 
     // Apply immediately if playing

@@ -1,0 +1,26 @@
+{
+  "name": "quran-app",
+  "version": "1.0.0",
+  "description": "![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-stable-success)",
+  "main": "app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FaizFaizal1/quran-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FaizFaizal1/quran-app/issues"
+  },
+  "homepage": "https://github.com/FaizFaizal1/quran-app#readme",
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}
