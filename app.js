@@ -24,6 +24,9 @@ const state = {
     verseRepeat: 1,
     rangeRepeat: 1,
 
+    // Memorization State { surahId: [verseNum, verseNum, ...], ... }
+    memorization: {},
+
     // Runtime State
     isPlaying: false,
     currentVerseIndex: 0,
@@ -101,6 +104,22 @@ function loadSettings() {
     return false;
 }
 
+function saveMemorization() {
+    localStorage.setItem('quranMemorization', JSON.stringify(state.memorization));
+}
+
+function loadMemorization() {
+    const saved = localStorage.getItem('quranMemorization');
+    if (saved) {
+        try {
+            state.memorization = JSON.parse(saved);
+        } catch (e) {
+            console.error("Error loading memorization", e);
+            state.memorization = {};
+        }
+    }
+}
+
 // --- Initialization ---
 async function init() {
     console.log('Initializing Quran Loop App...');
@@ -110,6 +129,8 @@ async function init() {
             fetchReciters(),
             fetchChapters()
         ]);
+
+        loadMemorization();
 
         setupEventListeners();
 
@@ -142,6 +163,7 @@ async function init() {
 async function fetchReciters() {
     const curatedReciters = [
         { id: 'Alafasy_128kbps', name: 'Mishary Rashid Alafasy' },
+        { id: 'Abdurrahmaan_As-Sudais_192kbps', name: 'Abdurrahmaan As-Sudais' },
         { id: 'Abdul_Basit_Murattal_192kbps', name: 'Abdul Basit (Murattal)' },
         { id: 'Abdul_Basit_Mujawwad_128kbps', name: 'Abdul Basit (Mujawwad)' },
         { id: 'Minshawy_Murattal_128kbps', name: 'Al-Minshawy (Murattal)' },
@@ -213,11 +235,73 @@ function renderVerses() {
             </div>
             <p class="verse-arabic">${verse.text}</p>
             <p class="verse-translation">${verse.translation}</p>
+            
+            <div class="verse-actions" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                <label class="memorize-control">
+                    <input type="checkbox" class="memorize-checkbox" 
+                           data-surah="${state.selectedSurahId}" 
+                           data-verse="${verse.number}"
+                           ${isMemorized(state.selectedSurahId, verse.number) ? 'checked' : ''}>
+                    <span class="memorize-label">Memorized</span>
+                </label>
+            </div>
         `;
+
+        // Checkbox Event Listener
+        const checkbox = div.querySelector('.memorize-checkbox');
+        checkbox.addEventListener('change', (e) => {
+            toggleMemorize(state.selectedSurahId, verse.number, e.target.checked);
+        });
 
         ui.versesContainer.appendChild(div);
     });
+
+    updateProgress();
 }
+
+function isMemorized(surahId, verseNum) {
+    if (!state.memorization[surahId]) return false;
+    return state.memorization[surahId].includes(verseNum);
+}
+
+function toggleMemorize(surahId, verseNum, isChecked) {
+    if (!state.memorization[surahId]) {
+        state.memorization[surahId] = [];
+    }
+
+    if (isChecked) {
+        if (!state.memorization[surahId].includes(verseNum)) {
+            state.memorization[surahId].push(verseNum);
+        }
+    } else {
+        state.memorization[surahId] = state.memorization[surahId].filter(v => v !== verseNum);
+    }
+
+    saveMemorization();
+    updateProgress();
+}
+
+function updateProgress() {
+    const surah = state.chapters.find(c => c.id === state.selectedSurahId);
+    if (!surah) return;
+
+    const totalVerses = surah.verses_count;
+    const memorizedCount = state.memorization[state.selectedSurahId]?.length || 0;
+
+    // Clamp just in case
+    const validCount = Math.min(memorizedCount, totalVerses);
+
+    const percentage = Math.round((validCount / totalVerses) * 100);
+
+    const progressBar = document.getElementById('progress-bar-fill');
+    const progressText = document.getElementById('progress-text');
+
+    if (progressBar && progressText) {
+        progressBar.style.width = `${percentage}%`;
+        progressText.textContent = `${percentage}% (${validCount}/${totalVerses})`;
+    }
+}
+
 
 function highlightVerse(verseNum) {
     // Remove old highlight
