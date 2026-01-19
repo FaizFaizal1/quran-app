@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Quran Loop</string>
+    <string name="title_activity_main">Quran Loop</string>
+    <string name="package_name">com.quranloop.app</string>
+    <string name="custom_url_scheme">com.quranloop.app</string>
+</resources>
