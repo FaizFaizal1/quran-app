@@ -27,6 +27,9 @@ const state = {
     // Memorization State { surahId: [verseNum, verseNum, ...], ... }
     memorization: {},
 
+    // Goals State [ { id: TIMESTAMP, surahId: 1, start: 1, end: 7, deadline: "YYYY-MM-DD" } ]
+    goals: [],
+
     // Runtime State
     isPlaying: false,
     currentVerseIndex: 0,
@@ -65,7 +68,15 @@ const ui = {
     btnSpeed: document.getElementById('btn-speed'),
 
     // Increment/Decrement Buttons
-    controlBtns: document.querySelectorAll('.control-btn.plus, .control-btn.minus')
+    controlBtns: document.querySelectorAll('.control-btn.plus, .control-btn.minus'),
+
+    // Goals UI
+    goalSurahSelect: document.getElementById('goal-surah'),
+    goalStartInput: document.getElementById('goal-start'),
+    goalEndInput: document.getElementById('goal-end'),
+    goalDeadlineInput: document.getElementById('goal-deadline'),
+    btnAddGoal: document.getElementById('btn-add-goal'),
+    goalsList: document.getElementById('goals-list')
 };
 
 // --- Persistence ---
@@ -120,6 +131,22 @@ function loadMemorization() {
     }
 }
 
+function saveGoals() {
+    localStorage.setItem('quranGoals', JSON.stringify(state.goals));
+}
+
+function loadGoals() {
+    const saved = localStorage.getItem('quranGoals');
+    if (saved) {
+        try {
+            state.goals = JSON.parse(saved);
+        } catch (e) {
+            console.error("Error loading goals", e);
+            state.goals = [];
+        }
+    }
+}
+
 // --- Initialization ---
 async function init() {
     console.log('Initializing Quran Loop App...');
@@ -131,8 +158,13 @@ async function init() {
         ]);
 
         loadMemorization();
+        loadGoals();
 
         setupEventListeners();
+
+        // Populate Goal Surah Select
+        populateSelect(ui.goalSurahSelect, state.chapters, 'id', 'name');
+        renderGoals();
 
         // Load Settings OR Defaults
         if (loadSettings()) {
@@ -279,6 +311,9 @@ function toggleMemorize(surahId, verseNum, isChecked) {
 
     saveMemorization();
     updateProgress();
+
+    // Update goals that might be affected
+    renderGoals();
 }
 
 function updateProgress() {
@@ -383,9 +418,38 @@ function setupEventListeners() {
         console.error("Audio Error", e);
         stopPlayback();
     });
+
+    // Goals Events
+    ui.btnAddGoal.addEventListener('click', addGoal);
+
+    // Delete Goal or Play Goal (Event Delegation)
+    ui.goalsList.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.btn-delete-goal');
+        const playBtn = e.target.closest('.btn-play-goal');
+
+        if (deleteBtn) {
+            const id = parseInt(deleteBtn.getAttribute('data-id'));
+            deleteGoal(id);
+        } else if (playBtn) {
+            const id = parseInt(playBtn.getAttribute('data-id'));
+            playGoal(id);
+        }
+    });
+
+    // Update Max Verse for Goal Inputs
+    ui.goalSurahSelect.addEventListener('change', (e) => {
+        const surahId = parseInt(e.target.value);
+        const surah = state.chapters.find(c => c.id === surahId);
+        if (surah) {
+            ui.goalStartInput.max = surah.verses_count;
+            ui.goalEndInput.max = surah.verses_count;
+            ui.goalStartInput.value = 1;
+            ui.goalEndInput.value = surah.verses_count; // Default to full surah or reasonable range
+        }
+    });
 }
 
-function handleSurahChange(surahId, resetVerses = true) {
+async function handleSurahChange(surahId, resetVerses = true) {
     state.selectedSurahId = surahId;
     const surah = state.chapters.find(c => c.id === surahId);
 
@@ -404,7 +468,7 @@ function handleSurahChange(surahId, resetVerses = true) {
         ui.npSurah.textContent = surah.name;
 
         // Fetch Text!
-        fetchVerses(surahId);
+        await fetchVerses(surahId);
     }
 }
 
@@ -546,16 +610,19 @@ function handleVerseEnd() {
             updateStatusDisplay();
         } else {
             playCurrentVerse();
+
         }
     }
+
 }
 
 function updateStatusDisplay() {
-    ui.statusVerse.textContent = `${state.currentVerseLoopCount + 1} / ${state.verseRepeat}`;
-    ui.statusRange.textContent = `${state.currentRangeLoopCount + 1} / ${state.rangeRepeat}`;
+    if (ui.statusVerse) ui.statusVerse.textContent = `${state.currentVerseLoopCount + 1} / ${state.verseRepeat}`;
+    if (ui.statusRange) ui.statusRange.textContent = `${state.currentRangeLoopCount + 1} / ${state.rangeRepeat}`;
 }
 
 function updatePlayButton() {
+    if (!ui.btnPlay) return;
     const icon = ui.btnPlay.querySelector('i');
     if (state.isPlaying) {
         icon.classList.remove('fa-play');
@@ -566,6 +633,174 @@ function updatePlayButton() {
         icon.classList.add('fa-play');
         ui.btnPlay.parentElement.classList.remove('playing');
     }
+}
+
+// --- Goals Logic ---
+
+function addGoal() {
+    const surahId = parseInt(ui.goalSurahSelect.value);
+    const start = parseInt(ui.goalStartInput.value);
+    const end = parseInt(ui.goalEndInput.value);
+    const deadline = ui.goalDeadlineInput.value;
+
+    if (!surahId || !start || !end || !deadline) {
+        alert("Please fill in all fields for the goal.");
+        return;
+    }
+
+    if (start > end) {
+        alert("Start verse cannot be greater than end verse.");
+        return;
+    }
+
+    const newGoal = {
+        id: Date.now(),
+        surahId,
+        start,
+        end,
+        deadline
+    };
+
+    state.goals.push(newGoal);
+    saveGoals();
+    renderGoals();
+
+    ui.goalDeadlineInput.value = '';
+}
+
+async function playGoal(id) {
+    const goal = state.goals.find(g => g.id === id);
+    if (!goal) return;
+
+    // Stop current playback to be safe
+    stopPlayback();
+
+    // Update Surah Selection
+    ui.surahSelect.value = goal.surahId;
+    // Call handleSurahChange to set state and fetch verses (await it)
+    await handleSurahChange(goal.surahId, false);
+
+    // Set Range
+    state.startVerse = goal.start;
+    state.endVerse = goal.end;
+
+    // Update UI Inputs
+    ui.startVerseInput.value = goal.start;
+    ui.endVerseInput.value = goal.end;
+
+    // Save Settings
+    saveSettings();
+
+    // Start Playback
+    startPlayback();
+
+    // Scroll to top to see player/verses
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteGoal(id) {
+    if (confirm("Are you sure you want to delete this goal?")) {
+        state.goals = state.goals.filter(g => g.id !== id);
+        saveGoals();
+        renderGoals();
+    }
+}
+
+function renderGoals() {
+    ui.goalsList.innerHTML = '';
+
+    if (state.goals.length === 0) {
+        ui.goalsList.innerHTML = `
+            <div class="empty-state">
+                <p>No active goals. Set a target to track your memorization!</p>
+            </div>`;
+        return;
+    }
+
+    state.goals.forEach(goal => {
+        const surah = state.chapters.find(c => c.id === goal.surahId);
+        const surahName = surah ? surah.name : `Surah ${goal.surahId}`;
+
+        // Calculate Progress
+        const total = goal.end - goal.start + 1;
+        let memorizedCount = 0;
+        const surahMem = state.memorization[goal.surahId] || [];
+
+        for (let i = goal.start; i <= goal.end; i++) {
+            if (surahMem.includes(i)) {
+                memorizedCount++;
+            }
+        }
+
+        const percent = Math.round((memorizedCount / total) * 100);
+
+        // Deadline Status
+        const now = new Date();
+        const deadlineDate = new Date(goal.deadline);
+        // Set deadline to end of that day
+        deadlineDate.setHours(23, 59, 59, 999);
+
+        const diffMs = deadlineDate - now;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+        let deadlineClass = '';
+        let deadlineText = '';
+
+        if (diffMs < 0) {
+            deadlineClass = 'overdue';
+            deadlineText = 'Overdue';
+        } else if (diffDays >= 1) {
+            deadlineText = `${diffDays} Day${diffDays > 1 ? 's' : ''} Left`;
+            // Warning if less than 3 days
+            if (diffDays <= 3) deadlineClass = 'near';
+        } else {
+            // Less than 24 hours
+            deadlineClass = 'near';
+            deadlineText = `${diffHours} Hour${diffHours !== 1 ? 's' : ''} Left`;
+        }
+
+        // Format Date for display
+        const dateDisplay = new Date(goal.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+        const div = document.createElement('div');
+        div.className = 'goal-item';
+        div.innerHTML = `
+            <div class="goal-header">
+                <div class="goal-title">
+                    <span>${surahName}</span>
+                    <span class="goal-range">Verses ${goal.start} - ${goal.end}</span>
+                </div>
+                <div class="goal-actions">
+                    <button class="btn-play-goal" data-id="${goal.id}" title="Play Goal">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button class="btn-delete-goal" data-id="${goal.id}" title="Delete Goal">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <span class="goal-deadline">
+                <i class="fa-regular fa-calendar"></i> 
+                ${dateDisplay}
+                <span class="badge-deadline ${deadlineClass}">${deadlineText}</span>
+            </span>
+            
+            <div class="goal-stats">
+                <span>Progress</span>
+                <span class="goal-percent">${percent}%</span>
+            </div>
+            
+            <div class="goal-progress">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: ${percent}%;"></div>
+                </div>
+            </div>
+        `;
+
+        ui.goalsList.appendChild(div);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -1,21 +1,22 @@
 :root {
-    --primary-hue: 155; /* Emerald Greenish */
+    --primary-hue: 155;
+    /* Emerald Greenish */
     --primary-color: hsl(var(--primary-hue), 60%, 45%);
     --primary-glow: hsl(var(--primary-hue), 60%, 45%, 0.5);
-    
+
     --bg-dark: #0f1115;
     --bg-card: rgba(30, 34, 40, 0.7);
     --bg-card-border: rgba(255, 255, 255, 0.1);
-    
+
     --text-main: #ffffff;
     --text-muted: #a0a0a0;
-    
+
     --font-family: 'Outfit', sans-serif;
-    
+
     --radius-lg: 20px;
     --radius-md: 12px;
     --radius-sm: 8px;
-    
+
     --transition: all 0.3s ease;
 }
 
@@ -30,11 +31,11 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
+    padding: 0;
+    /* Remove body padding */
     overflow-x: hidden;
+    overflow-y: hidden;
+    /* Prevent body scroll, use inner scrolls */
 }
 
 /* Background Effects */
@@ -45,15 +46,51 @@ body {
     width: 100%;
     height: 100%;
     z-index: -1;
-    background: 
+    background:
         radial-gradient(circle at 10% 20%, rgba(20, 100, 70, 0.2) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(20, 50, 100, 0.2) 0%, transparent 40%);
 }
 
-.app-container {
-    width: 100%;
-    max-width: 500px;
-    z-index: 1;
+.app-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid var(--bg-card-border);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scrollbar-width: thin;
+}
+
+/* Main Content Area */
+.content-area {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
 }
 
 /* Header */
@@ -94,7 +131,8 @@ header .subtitle {
     border-radius: var(--radius-lg);
     padding: 25px;
     margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
 }
 
 .card h2 {
@@ -143,7 +181,8 @@ label {
     font-size: 0.8rem;
 }
 
-select, input[type="number"] {
+select,
+input[type="number"] {
     width: 100%;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--bg-card-border);
@@ -156,7 +195,8 @@ select, input[type="number"] {
     transition: var(--transition);
 }
 
-select:focus, input[type="number"]:focus {
+select:focus,
+input[type="number"]:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(var(--primary-hue), 255, 255, 0.1);
@@ -217,6 +257,8 @@ select:focus, input[type="number"]:focus {
     text-align: center;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0 !important;
+    min-height: 400px;
 }
 
 .player-card::before {
@@ -256,7 +298,7 @@ select:focus, input[type="number"]:focus {
     justify-content: center;
     gap: 30px;
     margin-bottom: 25px;
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
     padding: 10px;
     border-radius: var(--radius-md);
 }
@@ -322,9 +364,17 @@ select:focus, input[type="number"]:focus {
 
 /* Animations */
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(var(--primary-hue), 255, 255, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(var(--primary-hue), 255, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(var(--primary-hue), 255, 255, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--primary-hue), 255, 255, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(var(--primary-hue), 255, 255, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--primary-hue), 255, 255, 0);
+    }
 }
 
 .control-btn.primary.active {
@@ -336,7 +386,7 @@ select:focus, input[type="number"]:focus {
     .grid-2 {
         grid-template-columns: 1fr;
     }
-    
+
     header h1 {
         font-size: 1.5rem;
     }
@@ -344,10 +394,13 @@ select:focus, input[type="number"]:focus {
 
 /* Verse Display */
 .display-card {
-    max-height: 400px;
+    flex: 1;
+    /* Take remaining height */
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) transparent;
+    max-height: none;
+    /* Override previous max-height */
 }
 
 .verses-list {
@@ -361,7 +414,8 @@ select:focus, input[type="number"]:focus {
     border-radius: var(--radius-md);
     border: 1px solid transparent;
     transition: var(--transition);
-    scroll-margin-top: 100px; /* Offset for scrolling */
+    scroll-margin-top: 100px;
+    /* Offset for scrolling */
 }
 
 .verse-item.active-verse {
@@ -375,20 +429,21 @@ select:focus, input[type="number"]:focus {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     padding-bottom: 5px;
 }
 
 .verse-number {
     font-size: 0.8rem;
     color: var(--text-muted);
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     padding: 2px 8px;
     border-radius: 10px;
 }
 
 .verse-arabic {
-    font-family: 'Amiri', serif; /* Or system default serif for Arabic */
+    font-family: 'Amiri', serif;
+    /* Or system default serif for Arabic */
     font-size: 1.8rem;
     text-align: right;
     line-height: 1.8;
@@ -412,7 +467,8 @@ select:focus, input[type="number"]:focus {
 .control-btn.text-btn {
     font-size: 0.9rem;
     font-weight: 700;
-    width: 50px; /* Match other secondary buttons */
+    width: 50px;
+    /* Match other secondary buttons */
     height: 50px;
     font-family: monospace;
 }
@@ -482,7 +538,8 @@ select:focus, input[type="number"]:focus {
 }
 
 .memorize-checkbox:checked::after {
-    content: '\f00c'; /* FontAwesome Check */
+    content: '\f00c';
+    /* FontAwesome Check */
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
     font-size: 12px;
@@ -494,8 +551,198 @@ select:focus, input[type="number"]:focus {
 }
 
 .memorize-label {
-    font-size: 0.75rem; /* Slightly smaller */
+    font-size: 0.75rem;
+    /* Slightly smaller */
     color: var(--text-muted);
     user-select: none;
     margin-top: 1px;
+}
+
+/* Goals Feature */
+.action-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 0 15px rgba(var(--primary-hue), 255, 255, 0.2);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(var(--primary-hue), 255, 255, 0.4);
+}
+
+.action-btn.full-width {
+    width: 100%;
+}
+
+.goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.goal-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--bg-card-border);
+    border-radius: var(--radius-md);
+    padding: 15px;
+    position: relative;
+    transition: var(--transition);
+}
+
+.goal-item:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.goal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.goal-range {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.btn-delete-goal {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 5px;
+    transition: var(--transition);
+    opacity: 0.5;
+}
+
+.btn-delete-goal:hover {
+    color: #ff4d4d;
+    opacity: 1;
+}
+
+.goal-deadline {
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+    color: var(--text-muted);
+}
+
+.badge-deadline {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+.badge-deadline.near {
+    background: rgba(255, 166, 0, 0.2);
+    color: orange;
+}
+
+.badge-deadline.overdue {
+    background: rgba(255, 77, 77, 0.2);
+    color: #ff4d4d;
+}
+
+/* Reuse existing progress bar styles but smaller */
+.goal-progress .progress-bar-bg {
+    height: 6px;
+}
+
+.goal-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+    color: var(--text-muted);
+}
+
+.goal-percent {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-muted);
+    border: 1px dashed var(--bg-card-border);
+    border-radius: var(--radius-md);
+}
+
+/* Goal Actions */
+.goal-actions {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.btn-play-goal {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 5px;
+    transition: var(--transition);
+    opacity: 0.8;
+}
+
+.btn-play-goal:hover {
+    color: #fff;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Responsive Stacking */
+@media (max-width: 768px) {
+    .app-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow-y: auto;
+    }
+
+    body {
+        overflow-y: auto;
+    }
+
+    .sidebar {
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--bg-card-border);
+        padding-bottom: 20px;
+    }
+
+    .content-area {
+        height: auto;
+        /* Let content expand */
+    }
+
+    .display-card {
+        height: 600px;
+        /* Fixed height on mobile so you can scroll verses */
+    }
 }
