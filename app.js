@@ -36,6 +36,7 @@ const state = {
     currentVerseLoopCount: 0,
     currentRangeLoopCount: 0,
     playbackRate: 1.0, // Default Speed
+    hasTouchedEndVerse: false, // Track manual interaction
 
     // Audio Object
     audio: document.getElementById('audio-player')
@@ -376,7 +377,22 @@ function setupEventListeners() {
 
     // Inputs
     ui.startVerseInput.addEventListener('change', () => { updateRangeFromUI(); saveSettings(); });
-    ui.endVerseInput.addEventListener('change', () => { updateRangeFromUI(); saveSettings(); });
+    // Update end verse interaction state on change
+    ui.endVerseInput.addEventListener('change', () => {
+        state.hasTouchedEndVerse = true;
+        updateRangeFromUI();
+        saveSettings();
+    });
+
+    // End Verse Focus Sync Logic
+    ui.endVerseInput.addEventListener('focus', () => {
+        if (!state.hasTouchedEndVerse) {
+            // Sync to Start Verse if not manually touched yet
+            ui.endVerseInput.value = ui.startVerseInput.value;
+            // Trigger update to sync state
+            updateRangeFromUI();
+        }
+    });
 
     // Play/Pause
     ui.btnPlay.addEventListener('click', togglePlay);
@@ -395,6 +411,11 @@ function setupEventListeners() {
 
             if (isPlus) val++;
             else val = Math.max(1, val - 1);
+
+            // Special logic: If updating End Verse manually via buttons, flag it as touched
+            if (targetId === 'end-verse') {
+                state.hasTouchedEndVerse = true;
+            }
 
             input.value = val;
             input.dispatchEvent(new Event('change'));
@@ -451,6 +472,7 @@ function setupEventListeners() {
 
 async function handleSurahChange(surahId, resetVerses = true) {
     state.selectedSurahId = surahId;
+    state.hasTouchedEndVerse = false; // Reset interaction flag
     const surah = state.chapters.find(c => c.id === surahId);
 
     if (surah) {
@@ -803,12 +825,5 @@ function renderGoals() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', init);
-// --- PWA: Service Worker Registration ---
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker Registered'))
-            .catch(err => console.log('Service Worker Registration Failed:', err));
-    });
-}
+// Initialize App
+window.addEventListener('DOMContentLoaded', init);
