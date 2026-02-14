@@ -20,6 +20,13 @@ const state = {
     startVerse: 1,
     endVerse: 1,
 
+    // Playlist State
+    mode: 'RANGE', // 'RANGE' or 'PLAYLIST'
+    playlist: [], // [ { surahId, verseNum, text, id: TIMESTAMP } ]
+    playlistIndex: 0,
+    playlistReciterId: null, // Separate reciter for playlist? Or shared? Shared easier for now.
+    playlistRangeRepeat: 1,
+
     // Loop Settings
     verseRepeat: 1,
     rangeRepeat: 1,
@@ -50,6 +57,18 @@ const ui = {
     endVerseInput: document.getElementById('end-verse'),
     verseRepeatInput: document.getElementById('verse-repeat'),
     rangeRepeatInput: document.getElementById('range-repeat'),
+
+    // Playlist UI
+    playlistReciterSelect: document.getElementById('playlist-reciter-select'),
+    btnModeRange: document.getElementById('btn-mode-range'),
+    btnModePlaylist: document.getElementById('btn-mode-playlist'),
+    rangeSettingsPanel: document.getElementById('range-settings-panel'),
+    playlistSettingsPanel: document.getElementById('playlist-settings-panel'),
+    playlistItems: document.getElementById('playlist-items'),
+    btnClearPlaylist: document.getElementById('btn-clear-playlist'),
+    btnPlayPlaylist: document.getElementById('btn-play-playlist'),
+    playlistRangeRepeatInput: document.getElementById('playlist-range-repeat'),
+
 
     // Playback Display
     npSurah: document.getElementById('np-surah'),
@@ -84,6 +103,12 @@ const ui = {
 
 function saveSettings() {
     const settings = AppLogic.createSettingsObject(state);
+    // Add Playlist stuff manually or update logic.js? 
+    // Let's just add it here for now as custom fields
+    settings.mode = state.mode;
+    settings.playlist = state.playlist;
+    settings.playlistRangeRepeat = state.playlistRangeRepeat;
+
     localStorage.setItem('quranLoopSettings', JSON.stringify(settings));
 }
 
@@ -100,6 +125,11 @@ function loadSettings() {
             state.rangeRepeat = settings.rangeRepeat || 1;
             state.playbackRate = settings.playbackRate || 1.0;
 
+            // Playlist
+            state.mode = settings.mode || 'RANGE';
+            state.playlist = settings.playlist || [];
+            state.playlistRangeRepeat = settings.playlistRangeRepeat || 1;
+
             // Apply to UI
             ui.startVerseInput.value = state.startVerse;
             ui.endVerseInput.value = state.endVerse;
@@ -107,6 +137,11 @@ function loadSettings() {
             ui.rangeRepeatInput.value = state.rangeRepeat;
             ui.btnSpeed.textContent = `${state.playbackRate}x`;
             state.audio.playbackRate = state.playbackRate;
+            ui.playlistRangeRepeatInput.value = state.playlistRangeRepeat;
+
+            // Apply Mode
+            switchMode(state.mode);
+            renderPlaylist();
 
             return true; // Settings loaded
         } catch (e) {
@@ -171,6 +206,7 @@ async function init() {
         if (loadSettings()) {
             // Restore Selection
             ui.reciterSelect.value = state.selectedReciterId;
+            if (ui.playlistReciterSelect) ui.playlistReciterSelect.value = state.selectedReciterId; // Sync
             ui.surahSelect.value = state.selectedSurahId;
             handleSurahChange(state.selectedSurahId, false); // false = don't reset verses
         } else {
@@ -178,6 +214,7 @@ async function init() {
             if (state.reciters.length > 0) {
                 ui.reciterSelect.value = state.reciters[0].id;
                 state.selectedReciterId = state.reciters[0].id;
+                if (ui.playlistReciterSelect) ui.playlistReciterSelect.value = state.reciters[0].id;
             }
             if (state.chapters.length > 0) {
                 ui.surahSelect.value = state.chapters[0].id;
@@ -207,6 +244,7 @@ async function fetchReciters() {
 
     state.reciters = curatedReciters;
     populateSelect(ui.reciterSelect, state.reciters, 'id', 'name');
+    if (ui.playlistReciterSelect) populateSelect(ui.playlistReciterSelect, state.reciters, 'id', 'name');
 }
 
 async function fetchChapters() {
@@ -265,6 +303,9 @@ function renderVerses() {
         div.innerHTML = `
             <div class="verse-header">
                 <span class="verse-number">${verse.number}</span>
+                <button class="control-btn btn-add-playlist" data-verse="${verse.number}" title="Add to Playlist">
+                    <i class="fa-solid fa-list-ul"></i>
+                </button>
             </div>
             <p class="verse-arabic">${verse.text}</p>
             <p class="verse-translation">${verse.translation}</p>
@@ -284,6 +325,12 @@ function renderVerses() {
         const checkbox = div.querySelector('.memorize-checkbox');
         checkbox.addEventListener('change', (e) => {
             toggleMemorize(state.selectedSurahId, verse.number, e.target.checked);
+        });
+
+        // Add to Playlist Listener
+        const btnAdd = div.querySelector('.btn-add-playlist');
+        btnAdd.addEventListener('click', () => {
+            addToPlaylist(state.selectedSurahId, verse.number, verse.text);
         });
 
         ui.versesContainer.appendChild(div);
@@ -457,6 +504,42 @@ function setupEventListeners() {
         }
     });
 
+    // Mobile Responsive
+    window.addEventListener('resize', () => {
+        // ...
+    });
+
+    // Playlist Mode Toggles
+    ui.btnModeRange.addEventListener('click', () => switchMode('RANGE'));
+    ui.btnModePlaylist.addEventListener('click', () => switchMode('PLAYLIST'));
+
+    // Playlist Controls
+    if (ui.playlistReciterSelect) {
+        ui.playlistReciterSelect.addEventListener('change', (e) => {
+            state.selectedReciterId = e.target.value;
+            // Sync with other select
+            ui.reciterSelect.value = state.selectedReciterId;
+            saveSettings();
+        });
+    }
+
+    ui.btnClearPlaylist.addEventListener('click', clearPlaylist);
+    ui.btnPlayPlaylist.addEventListener('click', () => startPlayback());
+
+    ui.playlistRangeRepeatInput.addEventListener('change', (e) => {
+        state.playlistRangeRepeat = parseInt(e.target.value) || 1;
+        saveSettings();
+    });
+
+    // Delegated Playlist Item Events (Remove)
+    ui.playlistItems.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.btn-remove-playlist-item');
+        if (removeBtn) {
+            const index = parseInt(removeBtn.getAttribute('data-index'));
+            removeFromPlaylist(index);
+        }
+    });
+
     // Update Max Verse for Goal Inputs
     ui.goalSurahSelect.addEventListener('change', (e) => {
         const surahId = parseInt(e.target.value);
@@ -511,11 +594,130 @@ function updateRangeFromUI() {
     state.endVerse = validated.end;
 }
 
+// Hard Reset Logic
+const btnHardReset = document.getElementById('btn-hard-reset');
+if (btnHardReset) {
+    btnHardReset.addEventListener('click', async () => {
+        if (confirm("This will clear all settings and reload the app to fix issues. Continue?")) {
+            // 1. Unregister Service Workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+
+            // 2. Clear Local Storage (Optional, maybe keep data?)
+            // Let's keep goals/memorization but clear settings which might be corrupted
+            localStorage.removeItem('quranLoopSettings');
+
+            // 3. Force Reload
+            window.location.reload(true);
+        }
+    });
+}
+
+// --- Playlist Logic ---
+
+function switchMode(newMode) {
+    state.mode = newMode;
+
+    // UI Toggles
+    if (newMode === 'PLAYLIST') {
+        ui.btnModeRange.classList.remove('active');
+        ui.btnModePlaylist.classList.add('active');
+        ui.rangeSettingsPanel.style.display = 'none';
+        ui.playlistSettingsPanel.style.display = 'block';
+
+        // Visual indicator in Player? 
+        ui.statusVerse.parentElement.style.opacity = '0.5'; // Dim verse loop
+        ui.statusRange.previousElementSibling.textContent = 'Playlist Loop';
+    } else {
+        ui.btnModePlaylist.classList.remove('active');
+        ui.btnModeRange.classList.add('active');
+        ui.playlistSettingsPanel.style.display = 'none';
+        ui.rangeSettingsPanel.style.display = 'block';
+
+        ui.statusVerse.parentElement.style.opacity = '1';
+        ui.statusRange.previousElementSibling.textContent = 'Range Loop';
+    }
+
+    saveSettings();
+    stopPlayback(); // Stop when switching modes to avoid confusion
+}
+
+
+function addToPlaylist(surahId, verseNum, text) {
+    // Optional: Fetch Surah Name for display
+    state.playlist.push({
+        surahId,
+        verseNum,
+        text: text || '', // Short text snippet?
+        id: Date.now()
+    });
+
+    renderPlaylist();
+    saveSettings();
+
+    // UI Feedback
+    const btn = document.querySelector(`.btn-add-playlist[data-verse="${verseNum}"]`);
+    if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(() => btn.innerHTML = original, 1000);
+    }
+}
+
+function removeFromPlaylist(index) {
+    state.playlist.splice(index, 1);
+    renderPlaylist();
+    saveSettings();
+}
+
+function clearPlaylist() {
+    if (confirm("Clear current playlist?")) {
+        state.playlist = [];
+        renderPlaylist();
+        saveSettings();
+    }
+}
+
+function renderPlaylist() {
+    if (!ui.playlistItems) return;
+    ui.playlistItems.innerHTML = '';
+
+    if (state.playlist.length === 0) {
+        ui.playlistItems.innerHTML = '<div class="empty-state" style="padding: 15px; color: var(--text-muted); text-align: center;">Playlist is empty. Add verses from the main card.</div>';
+        return;
+    }
+
+    state.playlist.forEach((item, index) => {
+        const surahName = state.chapters.find(c => c.id === item.surahId)?.name_simple || `Surah ${item.surahId}`;
+
+        const div = document.createElement('div');
+
+        const isActive = state.mode === 'PLAYLIST' && state.isPlaying && state.playlistIndex === index;
+        div.className = `playlist-item ${isActive ? 'playing' : ''}`;
+
+        div.innerHTML = `
+            <div class="playlist-item-text">
+                <span class="playlist-index">${index + 1}.</span> 
+                ${surahName} <span class="playlist-meta">${item.surahId}:${item.verseNum}</span>
+            </div>
+            <button class="btn-remove-playlist-item" data-index="${index}">
+                <i class="fa-solid fa-times"></i>
+            </button>
+         `;
+        ui.playlistItems.appendChild(div);
+    });
+}
+
+
 // --- Playback Logic ---
 
 function toggleSpeed() {
     state.playbackRate = AppLogic.calculateNextSpeed(state.playbackRate);
-    ui.btnSpeed.textContent = `${state.playbackRate}x`;
+    ui.btnSpeed.textContent = `${state.playbackRate} x`;
 
     // Apply immediately if playing
     state.audio.playbackRate = state.playbackRate;
@@ -530,9 +732,16 @@ function togglePlay() {
 }
 
 function startPlayback() {
-    if (!state.selectedReciterId || !state.selectedSurahId) {
-        alert("Please select a Reciter and Surah.");
-        return;
+    if (state.mode === 'PLAYLIST') {
+        if (state.playlist.length === 0) {
+            alert("Playlist is empty!");
+            return;
+        }
+    } else {
+        if (!state.selectedReciterId || !state.selectedSurahId) {
+            alert("Please select a Reciter and Surah.");
+            return;
+        }
     }
 
     state.isPlaying = true;
@@ -558,12 +767,18 @@ function stopPlayback() {
     state.audio.currentTime = 0;
     state.audio.playbackRate = state.playbackRate; // Reset rate just in case
 
+    // Reset Counters
     state.currentVerseIndex = 0;
     state.currentVerseLoopCount = 0;
     state.currentRangeLoopCount = 0;
 
+    // Only reset playlist index if stopped? Or maybe keep it? 
+    // Usually stop resets to beginning. Pause keeps place.
+    state.playlistIndex = 0;
+
     updatePlayButton();
     updateStatusDisplay();
+    renderPlaylist(); // To remove active highlight
 
     // Remove Highlight
     document.querySelectorAll('.verse-item.active-verse').forEach(el => el.classList.remove('active-verse'));
@@ -572,20 +787,43 @@ function stopPlayback() {
 function playCurrentVerse() {
     if (!state.isPlaying) return;
 
-    // Determine current verse number
-    const verseNum = state.startVerse + state.currentVerseIndex;
+    let surahId, verseNum;
 
-    // Update UI
-    ui.npDetails.textContent = `Verse ${verseNum} / ${state.endVerse}`;
+    if (state.mode === 'PLAYLIST') {
+        const item = state.playlist[state.playlistIndex];
+        if (!item) {
+            stopPlayback();
+            return;
+        }
+        surahId = item.surahId;
+        verseNum = item.verseNum;
+
+        // Update Player Card Text
+        const surah = state.chapters.find(c => c.id === surahId);
+        ui.npSurah.textContent = surah ? surah.name : `Surah ${surahId} `;
+        ui.npDetails.textContent = `Playlist Item ${state.playlistIndex + 1} / ${state.playlist.length} (Verse ${surahId}:${verseNum})`;
+
+        renderPlaylist(); // Update active item highlight
+
+    } else {
+        // Range Mode
+        surahId = state.selectedSurahId;
+        verseNum = state.startVerse + state.currentVerseIndex;
+        // Update UI
+        ui.npDetails.textContent = `Verse ${verseNum} / ${state.endVerse}`;
+
+        // Highlight in Verse List (Only if current surah is visible?)
+        highlightVerse(verseNum);
+    }
+
+
     const reciterName = state.reciters.find(r => r.id === state.selectedReciterId)?.name || 'Unknown';
     ui.npReciter.textContent = reciterName;
     updateStatusDisplay();
 
-    // Highlight Text
-    highlightVerse(verseNum);
 
     // Play
-    const url = AppLogic.constructAudioUrl(state.selectedReciterId, state.selectedSurahId, verseNum);
+    const url = AppLogic.constructAudioUrl(state.selectedReciterId, surahId, verseNum);
     state.audio.src = url;
     state.audio.playbackRate = state.playbackRate; // Critical: Apply speed on new source
     state.audio.play();
@@ -598,14 +836,17 @@ function handleVerseEnd() {
     const currentState = {
         verseIndex: state.currentVerseIndex,
         verseLoopCount: state.currentVerseLoopCount,
-        rangeLoopCount: state.currentRangeLoopCount
+        rangeLoopCount: state.currentRangeLoopCount,
+        mode: state.mode,
+        playlistIndex: state.playlistIndex
     };
 
     const settings = {
         startVerse: state.startVerse,
         endVerse: state.endVerse,
         verseRepeat: state.verseRepeat,
-        rangeRepeat: state.rangeRepeat
+        rangeRepeat: state.mode === 'PLAYLIST' ? state.playlistRangeRepeat : state.rangeRepeat,
+        playlistLength: state.playlist.length
     };
 
     const result = AppLogic.calculateNextState(currentState, settings);
@@ -620,30 +861,47 @@ function handleVerseEnd() {
         state.currentVerseLoopCount = result.state.verseLoopCount;
         state.currentRangeLoopCount = result.state.rangeLoopCount;
 
-        // If we are repeating the EXACT same verse, just replay audio
-        const prevVerseNum = settings.startVerse + currentState.verseIndex;
-        const newVerseNum = settings.startVerse + state.currentVerseIndex;
+        if (state.mode === 'PLAYLIST') {
+            state.playlistIndex = result.state.playlistIndex;
+        }
 
-        if (prevVerseNum === newVerseNum) {
+        // Check if we need to replay exact same audio or load new
+        // Optimization: if verseNum is same, just replay.
+
+        // But for Playlist, even if verse is same (duplicates?), we might want to treat it as next step.
+        // Simplest is to just call playCurrentVerse() which reloads src. 
+        // Logic.js returns state. App.js executes.
+
+        // If it's a "replay same verse" in loop (verseLoopCount increased), we just replay.
+        // If verseLoopCount is 0, we moved to next item.
+
+        if (result.state.verseLoopCount > 0) {
             state.audio.currentTime = 0;
             state.audio.play();
-            // playbackRate persists usually, but safe to re-assert if some browsers reset it
             state.audio.playbackRate = state.playbackRate;
             updateStatusDisplay();
         } else {
             playCurrentVerse();
-
         }
     }
 
 }
 
 function updateStatusDisplay() {
-    if (ui.statusVerse) ui.statusVerse.textContent = `${state.currentVerseLoopCount + 1} / ${state.verseRepeat}`;
-    if (ui.statusRange) ui.statusRange.textContent = `${state.currentRangeLoopCount + 1} / ${state.rangeRepeat}`;
+    if (state.mode === 'PLAYLIST') {
+        if (ui.statusVerse) ui.statusVerse.textContent = `1 / 1`; // Playlist items simplify verse repeat for now? NO, logic.js doesn't support per-item repeat yet unless we change it. Logic.js uses global verseRepeat.
+        // Wait, logic.js uses `verseRepeat`. In playlist mode, do we repeat each verse?
+        // User might want to. Let's assume global verseRepeat applies to playlist items too.
+        if (ui.statusVerse) ui.statusVerse.textContent = `${state.currentVerseLoopCount + 1} / ${state.verseRepeat}`;
+        if (ui.statusRange) ui.statusRange.textContent = `${state.currentRangeLoopCount + 1} / ${state.playlistRangeRepeat}`;
+    } else {
+        if (ui.statusVerse) ui.statusVerse.textContent = `${state.currentVerseLoopCount + 1} / ${state.verseRepeat}`;
+        if (ui.statusRange) ui.statusRange.textContent = `${state.currentRangeLoopCount + 1} / ${state.rangeRepeat}`;
+    }
 }
 
 function updatePlayButton() {
+
     if (!ui.btnPlay) return;
     const icon = ui.btnPlay.querySelector('i');
     if (state.isPlaying) {

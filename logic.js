@@ -48,10 +48,10 @@ const AppLogic = {
      * @returns {Object} { action: 'PLAY'|'STOP', state: { ...newCurrent } }
      */
     calculateNextState: (current, settings) => {
-        let { verseIndex, verseLoopCount, rangeLoopCount } = current;
-        const { startVerse, endVerse, verseRepeat, rangeRepeat } = settings;
+        let { verseIndex, verseLoopCount, rangeLoopCount, mode, playlistIndex } = current;
+        const { startVerse, endVerse, verseRepeat, rangeRepeat, playlistLength } = settings;
 
-        // 1. Check Verse Loop
+        // 1. Check Verse Loop (Common for both modes)
         if (verseLoopCount + 1 < verseRepeat) {
             return {
                 action: 'PLAY',
@@ -59,38 +59,80 @@ const AppLogic = {
             };
         }
 
-        // Verse Loop Done, Move to Next Verse
-        const nextVerseIndex = verseIndex + 1;
-        const nextVerseNum = startVerse + nextVerseIndex;
+        // Verse Loop Done. 
+        // Determine "Next Item" based on Mode.
 
-        // 2. Check Range Bounds
-        if (nextVerseNum > endVerse) {
-            // Range Finished
-            if (rangeLoopCount + 1 < rangeRepeat) {
-                // Restart Range
+        if (mode === 'PLAYLIST') {
+            const nextPlaylistIndex = (playlistIndex || 0) + 1;
+
+            if (nextPlaylistIndex >= playlistLength) {
+                // Playlist Finished
+                if (rangeLoopCount + 1 < rangeRepeat) {
+                    // Restart Playlist
+                    return {
+                        action: 'PLAY',
+                        state: {
+                            mode: 'PLAYLIST',
+                            playlistIndex: 0,
+                            verseIndex: 0, // Placeholder
+                            verseLoopCount: 0,
+                            rangeLoopCount: rangeLoopCount + 1
+                        }
+                    };
+                } else {
+                    // All Done
+                    return { action: 'STOP', state: current };
+                }
+            } else {
+                // Next Item in Playlist
                 return {
                     action: 'PLAY',
                     state: {
-                        verseIndex: 0,
+                        mode: 'PLAYLIST',
+                        playlistIndex: nextPlaylistIndex,
+                        verseIndex: 0, // Placeholder
                         verseLoopCount: 0,
-                        rangeLoopCount: rangeLoopCount + 1
+                        rangeLoopCount: rangeLoopCount
                     }
                 };
-            } else {
-                // All Done
-                return { action: 'STOP', state: current };
             }
-        }
 
-        // 3. Just Next Verse
-        return {
-            action: 'PLAY',
-            state: {
-                verseIndex: nextVerseIndex,
-                verseLoopCount: 0,
-                rangeLoopCount: rangeLoopCount // Keep current range loop count
+        } else {
+            // RANGE MODE (Default)
+            const nextVerseIndex = verseIndex + 1;
+            const nextVerseNum = startVerse + nextVerseIndex;
+
+            // Check Range Bounds
+            if (nextVerseNum > endVerse) {
+                // Range Finished
+                if (rangeLoopCount + 1 < rangeRepeat) {
+                    // Restart Range
+                    return {
+                        action: 'PLAY',
+                        state: {
+                            mode: 'RANGE',
+                            verseIndex: 0,
+                            verseLoopCount: 0,
+                            rangeLoopCount: rangeLoopCount + 1
+                        }
+                    };
+                } else {
+                    // All Done
+                    return { action: 'STOP', state: current };
+                }
             }
-        };
+
+            // Just Next Verse
+            return {
+                action: 'PLAY',
+                state: {
+                    mode: 'RANGE',
+                    verseIndex: nextVerseIndex,
+                    verseLoopCount: 0,
+                    rangeLoopCount: rangeLoopCount // Keep current range loop count
+                }
+            };
+        }
     },
 
     /**

@@ -64,122 +64,174 @@
 
             <!-- Settings Card -->
             <div class="card settings-card">
-                <h2><i class="fa-solid fa-sliders"></i> Loop Settings</h2>
+                <h2>
+                    <i class="fa-solid fa-sliders"></i>
+                    <span id="settings-title">Loop Settings</span>
+                </h2>
 
-                <div class="form-group">
-                    <label>Reciter</label>
-                    <div class="select-wrapper">
-                        <select id="reciter-select"></select>
-                        <i class="fa-solid fa-chevron-down"></i>
+                <!-- Mode Toggle -->
+                <div class="mode-toggle-container">
+                    <button id="btn-mode-range" class="mode-btn active">Range</button>
+                    <button id="btn-mode-playlist" class="mode-btn">Playlist</button>
+                </div>
+
+                <div id="range-settings-panel">
+                    <div class="form-group">
+                        <label>Reciter</label>
+                        <div class="select-wrapper">
+                            <select id="reciter-select"></select>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Surah</label>
+                        <div class="select-wrapper">
+                            <select id="surah-select"></select>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Start Verse</label>
+                            <div class="number-input">
+                                <button class="control-btn minus" data-target="start-verse"><i
+                                        class="fa-solid fa-minus"></i></button>
+                                <input type="number" id="start-verse" value="1" min="1">
+                                <button class="control-btn plus" data-target="start-verse"><i
+                                        class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>End Verse</label>
+                            <div class="number-input">
+                                <button class="control-btn minus" data-target="end-verse"><i
+                                        class="fa-solid fa-minus"></i></button>
+                                <input type="number" id="end-verse" value="1" min="1">
+                                <button class="control-btn plus" data-target="end-verse"><i
+                                        class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Verse Repeat</label>
+                            <input type="number" id="verse-repeat" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Range Repeat</label>
+                            <input type="number" id="range-repeat" value="1" min="1">
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Surah</label>
-                    <div class="select-wrapper">
-                        <select id="surah-select"></select>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                </div>
-
-                <div class="grid-2">
+                <!-- Playlist Settings Panel (Initially Hidden) -->
+                <div id="playlist-settings-panel" style="display: none;">
                     <div class="form-group">
-                        <label>Start Verse</label>
-                        <div class="number-input">
-                            <button class="control-btn minus" data-target="start-verse"><i
-                                    class="fa-solid fa-minus"></i></button>
-                            <input type="number" id="start-verse" value="1" min="1">
-                            <button class="control-btn plus" data-target="start-verse"><i
-                                    class="fa-solid fa-plus"></i></button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>End Verse</label>
-                        <div class="number-input">
-                            <button class="control-btn minus" data-target="end-verse"><i
-                                    class="fa-solid fa-minus"></i></button>
-                            <input type="number" id="end-verse" value="1" min="1">
-                            <button class="control-btn plus" data-target="end-verse"><i
-                                    class="fa-solid fa-plus"></i></button>
-                        </div>
+                        <label>Reciter</label>
                     </div>
                 </div>
 
                 <hr class="divider">
 
+                <div class="troubleshooting" style="text-align: center;">
+                    <button id="btn-hard-reset"
+                        style="background: rgba(255,0,0,0.2); color: #ff9999; border: 1px solid rgba(255,0,0,0.3); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Reset App & Cache
+                    </button>
+                    <small style="display: block; color: var(--text-muted); margin-top: 5px; font-size: 0.7rem;">Use
+                        this if inputs are stuck.</small>
+                </div>
+
+                <div class="playlist-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+                    <div id="playlist-items" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Items go here -->
+                        <div class="empty-state" style="padding: 15px;">Playlist is empty. Add verses from the main
+                            view.</div>
+                    </div>
+                </div>
+
                 <div class="grid-2">
-                    <div class="form-group">
-                        <label>Verse Repeat</label>
-                        <input type="number" id="verse-repeat" value="1" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Range Repeat</label>
-                        <input type="number" id="range-repeat" value="1" min="1">
-                    </div>
+                    <button id="btn-clear-playlist" class="action-btn"
+                        style="background: rgba(255, 77, 77, 0.2); color: #ff4d4d; width: 100%;">
+                        <i class="fa-solid fa-trash"></i> Clear
+                    </button>
+                    <button id="btn-play-playlist" class="action-btn" style="width: 100%;">
+                        <i class="fa-solid fa-play"></i> Play Queue
+                    </button>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Playlist Repeat</label>
+                    <input type="number" id="playlist-range-repeat" value="1" min="1">
                 </div>
             </div>
+    </div>
 
-            <!-- Memorization Progress -->
-            <div class="memorization-dashboard">
-                <div class="progress-info">
-                    <span>Memorized</span>
-                    <span id="progress-text">0% (0/0)</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+    <!-- Memorization Progress -->
+    <div class="memorization-dashboard">
+        <div class="progress-info">
+            <span>Memorized</span>
+            <span id="progress-text">0% (0/0)</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Goals Card -->
+    <div class="card goals-card">
+        <h2><i class="fa-solid fa-bullseye"></i> My Goals</h2>
+
+        <div id="goals-list" class="goals-list">
+            <!-- Goals Rendered Here -->
+        </div>
+
+        <hr class="divider">
+
+        <h3>Set New Goal</h3>
+        <div class="form-group">
+            <label>Surah</label>
+            <div class="select-wrapper">
+                <select id="goal-surah"></select>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group">
+                <label>Start</label>
+                <input type="number" id="goal-start" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>End</label>
+                <input type="number" id="goal-end" value="1" min="1">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Deadline</label>
+            <input type="date" id="goal-deadline">
+        </div>
+        <button id="btn-add-goal" class="action-btn full-width">
+            <i class="fa-solid fa-plus"></i> Add Goal
+        </button>
+    </div>
+
+
+    </aside>
+
+    <!-- Main Content: Verses -->
+    <main class="content-area">
+        <div class="card display-card">
+            <div id="verses-container" class="verses-list">
+                <div class="verse-item placeholder">
+                    <p>Select a Surah to begin practicing.</p>
                 </div>
             </div>
-
-            <!-- Goals Card -->
-            <div class="card goals-card">
-                <h2><i class="fa-solid fa-bullseye"></i> My Goals</h2>
-
-                <div id="goals-list" class="goals-list">
-                    <!-- Goals Rendered Here -->
-                </div>
-
-                <hr class="divider">
-
-                <h3>Set New Goal</h3>
-                <div class="form-group">
-                    <label>Surah</label>
-                    <div class="select-wrapper">
-                        <select id="goal-surah"></select>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>Start</label>
-                        <input type="number" id="goal-start" value="1" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>End</label>
-                        <input type="number" id="goal-end" value="1" min="1">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Deadline</label>
-                    <input type="date" id="goal-deadline">
-                </div>
-                <button id="btn-add-goal" class="action-btn full-width">
-                    <i class="fa-solid fa-plus"></i> Add Goal
-                </button>
-            </div>
-
-
-        </aside>
-
-        <!-- Main Content: Verses -->
-        <main class="content-area">
-            <div class="card display-card">
-                <div id="verses-container" class="verses-list">
-                    <div class="verse-item placeholder">
-                        <p>Select a Surah to begin practicing.</p>
-                    </div>
-                </div>
-            </div>
-        </main>
+        </div>
+    </main>
     </div>
     <!-- Core Logic -->
     <script src="logic.js"></script>
