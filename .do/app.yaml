@@ -1,13 +1,13 @@
 name: quran-app
 region: sgp
 static_sites:
-- name: quran-app-frontend
-  source_dir: /
-  index_document: index.html
-  error_document: index.html
-  build_command: npm run build
-  output_dir: dist
-  github:
-    branch: master
-    deploy_on_push: true
-    repo: FaizFaizal1/quran-app
+  - name: quran-app-frontend
+    source_dir: /
+    index_document: index.html
+    error_document: index.html
+    build_command: npm run build
+    output_dir: dist
+    github:
+      branch: master
+      deploy_on_push: true
+      repo: FaizFaizal1/quran-app

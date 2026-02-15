@@ -22,5 +22,6 @@ doctl apps create --spec .do/app.yaml
 8.  Click **Next** until finish.
 
 ## 3. Verification
+
 Once deployed, DigitalOcean will provide a URL (e.g., `quran-app-xyz.ondigitalocean.app`).
 Visit this URL on your phone to verify the mobile layout.

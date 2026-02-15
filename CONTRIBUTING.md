@@ -9,13 +9,13 @@ We use a simplified Git Flow:
 - **`main`**: Production-ready code. Deployed automatically.
 - **`dev`**: Integration branch. All features merge here first.
 - **Feature Branches**:
-    - Format: `feat/short-description`
-    - Example: `feat/add-dark-mode-toggle`
+  - Format: `feat/short-description`
+  - Example: `feat/add-dark-mode-toggle`
 - **Bug Fixes**:
-    - Format: `fix/issue-description`
-    - Example: `fix/mobile-menu-overflow`
+  - Format: `fix/issue-description`
+  - Example: `fix/mobile-menu-overflow`
 - **Chores/Refactors**:
-    - Format: `chore/setup-eslint` or `refactor/audio-engine`
+  - Format: `chore/setup-eslint` or `refactor/audio-engine`
 
 ## 2. Commit Convention
 
@@ -26,6 +26,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/). Messages
 ```
 
 **Types:**
+
 - `feat`: A new feature
 - `fix`: A bug fix
 - `docs`: Documentation only changes
@@ -35,6 +36,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/). Messages
 - `chore`: Changes to the build process or auxiliary tools
 
 **Example:**
+
 > `feat(player): add playback speed control`
 
 ## 3. Pull Request Process

@@ -9,14 +9,15 @@ A premium, web-based memorization tool designed to help users loop specific vers
 
 - **Premium UI**: Dark mode, glassmorphism design, and mobile-responsive layout.
 - **Advanced Looping**:
-    - **Verse Repeat**: Repeat individual verses $N$ times.
-    - **Range Repeat**: Repeat a sequence of verses $M$ times.
+  - **Verse Repeat**: Repeat individual verses $N$ times.
+  - **Range Repeat**: Repeat a sequence of verses $M$ times.
 - **High Quality Audio**: Integrates with [EveryAyah](https://everyayah.com) for verse-by-verse streaming.
 - **Rich Content**: Detailed metadata for all 114 Surahs via [Quran.com API](https://api.quran.com/).
 
 ## Quick Start
 
 1.  **Clone the repository**
+
     ```bash
     git clone https://github.com/yourusername/quran-app.git
     cd quran-app
@@ -24,8 +25,9 @@ A premium, web-based memorization tool designed to help users loop specific vers
 
 2.  **Open in Browser**
     Since this is a static site, you can simply open `index.html` in your browser.
-    
+
     OR use a simple specific server:
+
     ```bash
     npx serve .
     ```
@@ -33,12 +35,14 @@ A premium, web-based memorization tool designed to help users loop specific vers
 ## Development
 
 ### Project Structure
+
 - `index.html`: Main entry point and UI structure.
 - `style.css`: All styles (variables, responsive design, animations).
 - `app.js`: Core logic (State, API, Audio Engine).
 - `tests/`: Browser-based test suite.
 
 ### Running Tests
+
 Open `tests/test.html` in your browser to run the logic verification suite.
 
 ## Contributing

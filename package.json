@@ -8,8 +8,16 @@
   },
   "scripts": {
     "test": "jest",
+    "test:ui": "playwright test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prepare": "husky",
     "build": "mkdir -p dist && cp index.html style.css app.js logic.js manifest.json sw.js dist/ && cp -r tests dist/",
     "postinstall": "npm run build"
+  },
+  "lint-staged": {
+    "*.{js,css,md}": "prettier --write",
+    "*.js": "eslint --fix"
   },
   "repository": {
     "type": "git",
@@ -23,7 +31,14 @@
   },
   "homepage": "https://github.com/FaizFaizal1/quran-app#readme",
   "devDependencies": {
-    "jest": "^30.2.0"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.58.2",
+    "eslint": "^10.0.0",
+    "globals": "^17.3.0",
+    "husky": "^9.1.7",
+    "jest": "^30.2.0",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",

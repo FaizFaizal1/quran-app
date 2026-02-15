@@ -1,242 +1,298 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quran Loop | Premium Memorization Tool</title>
-    <meta name="description"
-        content="A premium Quran audio looping tool for memorization. Select verses, set repeats, and listen with top reciters.">
+    <meta
+      name="description"
+      content="A premium Quran audio looping tool for memorization. Select verses, set repeats, and listen with top reciters."
+    />
     <!-- Google Fonts: Outfit for a modern, clean look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css?v=3">
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="style.css?v=3" />
+  </head>
 
-<body>
+  <body>
     <div class="app-background"></div>
-    <div class="app-layout">
-        <!-- Sidebar: Controls, Goals, Settings -->
-        <aside class="sidebar">
-            <header>
-                <div class="logo">
-                    <i class="fa-solid fa-kaaba"></i>
-                    <span>Quran Loop</span>
-                </div>
-            </header>
+    <div class="app-background"></div>
 
-            <!-- Player Status Card -->
-            <div class="card player-card">
-                <div class="now-playing">
-                    <h3 id="np-surah">Select Surah</h3>
-                    <p id="np-details">Verse - / -</p>
-                    <p class="sub-text" id="np-reciter">Select Reciter</p>
-                </div>
+    <!-- Top Navigation -->
+    <nav class="top-bar">
+      <div class="logo">
+        <i class="fa-solid fa-kaaba"></i>
+        <span>Quran Loop</span>
+      </div>
+      <button id="btn-toggle-settings" class="icon-btn">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </nav>
 
-                <div class="audio-controls">
-                    <button id="btn-prev" class="control-btn"><i class="fa-solid fa-backward-step"></i></button>
-                    <button id="btn-stop" class="control-btn"><i class="fa-solid fa-stop"></i></button>
-                    <button id="btn-play" class="control-btn primary"><i class="fa-solid fa-play"></i></button>
-                    <button id="btn-next" class="control-btn"><i class="fa-solid fa-forward-step"></i></button>
-                </div>
+    <!-- Main Content: Verses Feed -->
+    <main class="content-area">
+      <div id="verses-container" class="verses-list">
+        <div class="verse-item placeholder">
+          <p>Select a Surah to begin practicing.</p>
+        </div>
+      </div>
+      <!-- Spacer for fixed footer -->
+      <div style="height: 120px"></div>
+    </main>
 
-                <div class="loop-status">
-                    <div class="status-item">
-                        <small>Verse Loop</small>
-                        <span id="status-verse-loop">0 / 0</span>
-                    </div>
-                    <div class="status-item">
-                        <small>Range Loop</small>
-                        <span id="status-range-loop">0 / 0</span>
-                    </div>
-                </div>
+    <!-- Settings Drawer (Hidden by default) -->
+    <div id="settings-overlay" class="drawer-overlay"></div>
+    <aside id="settings-drawer" class="drawer">
+      <div class="drawer-header">
+        <h2>Settings & Goals</h2>
+        <button id="btn-close-settings" class="icon-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
 
-                <div style="margin-top: 15px; text-align: center;">
-                    <button id="btn-speed" class="control-btn text-btn">1.0x</button>
-                </div>
+      <div class="drawer-content">
+        <!-- Loop Settings -->
+        <div class="card settings-card">
+          <h3><i class="fa-solid fa-sliders"></i> Loop Controls</h3>
 
-                <audio id="audio-player"></audio>
+          <!-- Mode Toggle -->
+          <div class="mode-toggle-container">
+            <button id="btn-mode-range" class="mode-btn active">Range</button>
+            <button id="btn-mode-playlist" class="mode-btn">Playlist</button>
+          </div>
+
+          <div id="range-settings-panel">
+            <div class="form-group">
+              <label>Reciter</label>
+              <div class="select-wrapper">
+                <select id="reciter-select"></select>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
             </div>
 
-            <!-- Settings Card -->
-            <div class="card settings-card">
-                <h2>
-                    <i class="fa-solid fa-sliders"></i>
-                    <span id="settings-title">Loop Settings</span>
-                </h2>
-
-                <!-- Mode Toggle -->
-                <div class="mode-toggle-container">
-                    <button id="btn-mode-range" class="mode-btn active">Range</button>
-                    <button id="btn-mode-playlist" class="mode-btn">Playlist</button>
-                </div>
-
-                <div id="range-settings-panel">
-                    <div class="form-group">
-                        <label>Reciter</label>
-                        <div class="select-wrapper">
-                            <select id="reciter-select"></select>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Surah</label>
-                        <div class="select-wrapper">
-                            <select id="surah-select"></select>
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                    </div>
-
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Start Verse</label>
-                            <div class="number-input">
-                                <button class="control-btn minus" data-target="start-verse"><i
-                                        class="fa-solid fa-minus"></i></button>
-                                <input type="number" id="start-verse" value="1" min="1">
-                                <button class="control-btn plus" data-target="start-verse"><i
-                                        class="fa-solid fa-plus"></i></button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>End Verse</label>
-                            <div class="number-input">
-                                <button class="control-btn minus" data-target="end-verse"><i
-                                        class="fa-solid fa-minus"></i></button>
-                                <input type="number" id="end-verse" value="1" min="1">
-                                <button class="control-btn plus" data-target="end-verse"><i
-                                        class="fa-solid fa-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="divider">
-
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Verse Repeat</label>
-                            <input type="number" id="verse-repeat" value="1" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Range Repeat</label>
-                            <input type="number" id="range-repeat" value="1" min="1">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Playlist Settings Panel (Initially Hidden) -->
-                <div id="playlist-settings-panel" style="display: none;">
-                    <div class="form-group">
-                        <label>Reciter</label>
-                    </div>
-                </div>
-
-                <hr class="divider">
-
-                <div class="troubleshooting" style="text-align: center;">
-                    <button id="btn-hard-reset"
-                        style="background: rgba(255,0,0,0.2); color: #ff9999; border: 1px solid rgba(255,0,0,0.3); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Reset App & Cache
-                    </button>
-                    <small style="display: block; color: var(--text-muted); margin-top: 5px; font-size: 0.7rem;">Use
-                        this if inputs are stuck.</small>
-                </div>
-
-                <div class="playlist-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
-                    <div id="playlist-items" style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Items go here -->
-                        <div class="empty-state" style="padding: 15px;">Playlist is empty. Add verses from the main
-                            view.</div>
-                    </div>
-                </div>
-
-                <div class="grid-2">
-                    <button id="btn-clear-playlist" class="action-btn"
-                        style="background: rgba(255, 77, 77, 0.2); color: #ff4d4d; width: 100%;">
-                        <i class="fa-solid fa-trash"></i> Clear
-                    </button>
-                    <button id="btn-play-playlist" class="action-btn" style="width: 100%;">
-                        <i class="fa-solid fa-play"></i> Play Queue
-                    </button>
-                </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label>Playlist Repeat</label>
-                    <input type="number" id="playlist-range-repeat" value="1" min="1">
-                </div>
+            <div class="form-group">
+              <label>Surah</label>
+              <div class="select-wrapper">
+                <select id="surah-select"></select>
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
             </div>
-    </div>
 
-    <!-- Memorization Progress -->
-    <div class="memorization-dashboard">
-        <div class="progress-info">
-            <span>Memorized</span>
-            <span id="progress-text">0% (0/0)</span>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Start Verse</label>
+                <div class="number-input">
+                  <button class="control-btn minus" data-target="start-verse">
+                    <i class="fa-solid fa-minus"></i>
+                  </button>
+                  <input type="number" id="start-verse" value="1" min="1" />
+                  <button class="control-btn plus" data-target="start-verse">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>End Verse</label>
+                <div class="number-input">
+                  <button class="control-btn minus" data-target="end-verse">
+                    <i class="fa-solid fa-minus"></i>
+                  </button>
+                  <input type="number" id="end-verse" value="1" min="1" />
+                  <button class="control-btn plus" data-target="end-verse">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Verse Repeat</label>
+                <input type="number" id="verse-repeat" value="1" min="1" />
+              </div>
+              <div class="form-group">
+                <label>Range Repeat</label>
+                <input type="number" id="range-repeat" value="1" min="1" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Playlist Settings Panel -->
+          <div id="playlist-settings-panel" style="display: none">
+            <!-- Playlist Manager -->
+            <div class="playlist-manager">
+              <div class="form-group">
+                <label>Current Playlist</label>
+                <div class="playlist-controls-row">
+                  <div class="select-wrapper" style="flex: 1">
+                    <select id="playlist-select"></select>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </div>
+                  <button
+                    id="btn-create-playlist"
+                    class="icon-btn-small"
+                    title="New Playlist"
+                  >
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="playlist-actions-row">
+                <button id="btn-rename-playlist" class="text-btn-small">
+                  Rename
+                </button>
+                <button id="btn-merge-playlist" class="text-btn-small">
+                  Merge
+                </button>
+                <button id="btn-import-playlist" class="text-btn-small">
+                  Import
+                </button>
+                <button id="btn-export-playlist" class="text-btn-small">
+                  Export
+                </button>
+                <input
+                  type="file"
+                  id="import-playlist-file"
+                  style="display: none"
+                  accept=".json"
+                />
+                <button id="btn-delete-playlist" class="text-btn-small danger">
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            <div class="playlist-container">
+              <div id="playlist-items" class="playlist-list">
+                <!-- Items go here -->
+              </div>
+            </div>
+            <div class="grid-2">
+              <button id="btn-clear-playlist" class="action-btn danger-btn">
+                <i class="fa-solid fa-trash"></i> Clear Items
+              </button>
+              <button id="btn-play-playlist" class="action-btn primary-btn">
+                <i class="fa-solid fa-play"></i> Play Queue
+              </button>
+            </div>
+            <div class="form-group" style="margin-top: 15px">
+              <label>Playlist Repeat</label>
+              <input
+                type="number"
+                id="playlist-range-repeat"
+                value="1"
+                min="1"
+              />
+            </div>
+          </div>
         </div>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+
+        <!-- Memorization Progress -->
+        <div class="card memorization-card">
+          <h3><i class="fa-solid fa-brain"></i> Progress</h3>
+          <div class="progress-info">
+            <span id="progress-text">0% Memorized</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div
+              class="progress-bar-fill"
+              id="progress-bar-fill"
+              style="width: 0%"
+            ></div>
+          </div>
         </div>
-    </div>
 
-    <!-- Goals Card -->
-    <div class="card goals-card">
-        <h2><i class="fa-solid fa-bullseye"></i> My Goals</h2>
+        <!-- Goals Card -->
+        <div class="card goals-card">
+          <h3><i class="fa-solid fa-bullseye"></i> Goals</h3>
+          <div id="goals-list" class="goals-list"></div>
 
-        <div id="goals-list" class="goals-list">
-            <!-- Goals Rendered Here -->
-        </div>
+          <hr class="divider" />
 
-        <hr class="divider">
-
-        <h3>Set New Goal</h3>
-        <div class="form-group">
+          <h4>Add Goal</h4>
+          <div class="form-group">
             <label>Surah</label>
             <div class="select-wrapper">
-                <select id="goal-surah"></select>
-                <i class="fa-solid fa-chevron-down"></i>
+              <select id="goal-surah"></select>
+              <i class="fa-solid fa-chevron-down"></i>
             </div>
-        </div>
-        <div class="grid-2">
+          </div>
+          <div class="grid-2">
             <div class="form-group">
-                <label>Start</label>
-                <input type="number" id="goal-start" value="1" min="1">
+              <label>Start</label>
+              <input type="number" id="goal-start" value="1" min="1" />
             </div>
             <div class="form-group">
-                <label>End</label>
-                <input type="number" id="goal-end" value="1" min="1">
+              <label>End</label>
+              <input type="number" id="goal-end" value="1" min="1" />
             </div>
-        </div>
-        <div class="form-group">
+          </div>
+          <div class="form-group">
             <label>Deadline</label>
-            <input type="date" id="goal-deadline">
+            <input type="date" id="goal-deadline" />
+          </div>
+          <button id="btn-add-goal" class="action-btn full-width">
+            Add Goal
+          </button>
         </div>
-        <button id="btn-add-goal" class="action-btn full-width">
-            <i class="fa-solid fa-plus"></i> Add Goal
-        </button>
-    </div>
 
-
+        <div class="troubleshooting">
+          <button id="btn-hard-reset" class="reset-btn">
+            <i class="fa-solid fa-triangle-exclamation"></i> Reset App
+          </button>
+        </div>
+      </div>
     </aside>
 
-    <!-- Main Content: Verses -->
-    <main class="content-area">
-        <div class="card display-card">
-            <div id="verses-container" class="verses-list">
-                <div class="verse-item placeholder">
-                    <p>Select a Surah to begin practicing.</p>
-                </div>
-            </div>
+    <!-- Sticky Player Bar -->
+    <footer class="player-bar">
+      <div class="player-info">
+        <h4 id="np-surah">Select Surah</h4>
+        <p id="np-details">Verse - / -</p>
+        <small id="np-reciter">Select Reciter</small>
+      </div>
+
+      <div class="player-controls">
+        <button id="btn-prev" class="control-btn">
+          <i class="fa-solid fa-backward-step"></i>
+        </button>
+        <button id="btn-play" class="control-btn play-btn">
+          <i class="fa-solid fa-play"></i>
+        </button>
+        <button id="btn-stop" class="control-btn">
+          <i class="fa-solid fa-stop"></i>
+        </button>
+        <button id="btn-next" class="control-btn">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+
+      <div class="player-extras">
+        <button id="btn-speed" class="control-btn text-btn">1.0x</button>
+        <div class="loop-status-mini">
+          <span id="status-verse-loop">V: 0/0</span>
+          <span id="status-range-loop">R: 0/0</span>
         </div>
-    </main>
-    </div>
+      </div>
+
+      <audio id="audio-player"></audio>
+    </footer>
     <!-- Core Logic -->
     <script src="logic.js"></script>
     <!-- App Logic -->
     <script src="app.js"></script>
-</body>
-
+  </body>
 </html>
