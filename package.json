@@ -15,8 +15,8 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "start": "python3 -m http.server 8000",
-    "build": "mkdir -p dist && cp index.html style.css app.js logic.js manifest.json sw.js dist/ && cp -r tests dist/",
-    "postinstall": "npm run build"
+    "build": "node scripts/build.mjs",
+    "cap:sync": "npm run build && npx cap sync"
   },
   "lint-staged": {
     "*.{js,css,md}": "prettier --write",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
+    "esbuild": "^0.25.10",
     "eslint": "^10.0.0",
     "globals": "^17.3.0",
     "husky": "^9.1.7",

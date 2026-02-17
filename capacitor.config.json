@@ -1,5 +1,5 @@
 {
   "appId": "com.quranloop.app",
   "appName": "Quran Loop",
-  "webDir": "www"
+  "webDir": "dist"
 }

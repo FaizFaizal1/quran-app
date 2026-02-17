@@ -4,7 +4,7 @@
  */
 
 // --- App Logic is loaded from logic.js ---
-if (typeof AppLogic === 'undefined') {
+if (typeof window.AppLogic === 'undefined') {
   throw new Error('CRITICAL: logic.js not loaded!');
 }
 
