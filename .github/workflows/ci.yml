@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
-    branches: [main]
+    branches: [master, main]
 
 jobs:
   lint:
@@ -17,8 +17,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
-      - run: npm run format -- --check
+      - run: npm run lint:ci
+      - run: npm run format:check
 
   test-unit:
     runs-on: ubuntu-latest

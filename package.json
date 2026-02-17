@@ -10,8 +10,11 @@
     "test": "jest",
     "test:ui": "playwright test",
     "lint": "eslint .",
+    "lint:ci": "eslint . --max-warnings=0",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepare": "husky",
+    "start": "python3 -m http.server 8000",
     "build": "mkdir -p dist && cp index.html style.css app.js logic.js manifest.json sw.js dist/ && cp -r tests dist/",
     "postinstall": "npm run build"
   },

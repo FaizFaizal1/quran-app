@@ -12,13 +12,11 @@ const ASSETS = [
 
 // Install Event: Cache App Shell
 self.addEventListener('install', (e) => {
-  console.log('[Service Worker] Install');
   // Force the waiting service worker to become the active service worker
   self.skipWaiting();
 
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching all: app shell and content');
       return cache.addAll(ASSETS);
     })
   );
@@ -50,7 +48,6 @@ self.addEventListener('fetch', (e) => {
 
 // Activate Event: Cleanup old caches
 self.addEventListener('activate', (e) => {
-  console.log('[Service Worker] Activate');
   // Claim any clients immediately, so the new service worker takes control
   e.waitUntil(clients.claim());
 
@@ -59,7 +56,6 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[Service Worker] Removing old cache', key);
             return caches.delete(key);
           }
         })

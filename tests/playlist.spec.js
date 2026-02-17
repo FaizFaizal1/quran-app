@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Playlist Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
     await page.goto('/');
 
     // Mock confirm to always return true
@@ -10,19 +9,18 @@ test.describe('Playlist Functionality', () => {
       window.confirm = () => true;
     });
 
-    // Open Settings Drawer
-    await page.click('#btn-toggle-settings');
-    // Wait for drawer animation or element
+    // Sidebar is always visible now
     await page.waitForSelector('#btn-mode-playlist', { state: 'visible' });
 
-    // Check if app loaded
-    const appLoaded = await page.evaluate(() => !!window.createPlaylist);
-    console.log('App Loaded Check:', appLoaded);
-
-    // Switch to Playlist Mode using JS to avoid viewport issues
-    await page.evaluate(() =>
-      document.getElementById('btn-mode-playlist').click()
+    // Ensure app/event listeners are ready
+    await page.waitForFunction(
+      () => typeof window.createPlaylist === 'function'
     );
+    await expect(page.locator('#playlist-select option')).toHaveCount(1);
+
+    // Switch to Playlist Mode
+    await page.click('#btn-mode-playlist');
+    await expect(page.locator('#playlist-settings-panel')).toBeVisible();
   });
 
   test('should create a new playlist', async ({ page }) => {
@@ -86,8 +84,9 @@ test.describe('Playlist Functionality', () => {
     );
 
     // Should revert to default
-    await expect(page.locator('#playlist-select option')).not.toHaveText(
-      'Delete Me'
+    await expect(page.locator('#playlist-select option')).toHaveCount(1);
+    await expect(page.locator('#playlist-select option:checked')).toHaveText(
+      'My Playlist'
     );
   });
 
@@ -100,13 +99,6 @@ test.describe('Playlist Functionality', () => {
       document.getElementById('btn-create-playlist').click()
     );
 
-    // Close drawer
-    await page.evaluate(() =>
-      document.getElementById('btn-close-settings').click()
-    );
-    // Wait for overlay to NOT have 'open' class
-    await expect(page.locator('#settings-overlay')).not.toHaveClass(/open/);
-
     // 2. Go to Verses
     await page.waitForSelector('.verse-number');
 
@@ -115,10 +107,6 @@ test.describe('Playlist Functionality', () => {
     await page.click('.verse-item:first-child .btn-add-playlist');
 
     // 3. Verify
-    // Open drawer again to check items
-    await page.click('#btn-toggle-settings');
-    await page.waitForSelector('#playlist-items', { state: 'visible' });
-
     await expect(page.locator('#playlist-items .playlist-item')).toHaveCount(1);
     // The text contains "1. Surah Name 1:1", so we check for verse number or surah name
     await expect(page.locator('#playlist-items .playlist-item')).toContainText(

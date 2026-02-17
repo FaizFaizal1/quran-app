@@ -22,6 +22,7 @@
 
   --top-bar-height: 70px;
   --player-bar-height: 90px;
+  --sidebar-width: clamp(260px, 28vw, 360px);
 }
 
 * {
@@ -73,6 +74,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: calc(100% - var(--sidebar-width));
+  margin-left: var(--sidebar-width);
   padding: 0 20px;
   background: rgba(15, 17, 21, 0.8);
   backdrop-filter: blur(10px);
@@ -110,13 +113,12 @@ body {
 .content-area {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 20px var(--player-bar-height) 20px;
+  padding: 20px 24px calc(var(--player-bar-height) + 20px);
   /* Bottom padding for player bar space */
   scroll-behavior: smooth;
-  max-width: 800px;
-  /* readable width */
-  margin: 0 auto;
-  width: 100%;
+  width: calc(100% - var(--sidebar-width));
+  margin: 0 0 0 var(--sidebar-width);
+  max-width: none;
 }
 
 .verses-list {
@@ -194,8 +196,8 @@ body {
 .player-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
-  width: 100%;
+  left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
   height: var(--player-bar-height);
   background: rgba(20, 22, 26, 0.95);
   backdrop-filter: blur(15px);
@@ -302,35 +304,24 @@ body {
 
 /* Settings Drawer */
 .drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
-  z-index: 299;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+  display: none;
 }
 
 .drawer-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
+  display: none;
 }
 
 .drawer {
   position: fixed;
   top: 0;
   left: 0;
-  width: 85%;
-  max-width: 400px;
+  width: var(--sidebar-width);
+  max-width: none;
   height: 100%;
   background: #15181e;
-  z-index: 300;
-  transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 250;
+  transform: translateX(0);
+  transition: none;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--bg-card-border);
@@ -339,6 +330,11 @@ body {
 
 .drawer.open {
   transform: translateX(0);
+}
+
+#btn-toggle-settings,
+#btn-close-settings {
+  display: none;
 }
 
 .drawer-header {
@@ -443,6 +439,118 @@ input {
   color: white;
 }
 
+.playlist-controls-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-btn-small {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--bg-card-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.icon-btn-small:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.playlist-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.text-btn-small {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 999px;
+  color: var(--text-main);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.text-btn-small:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.text-btn-small.danger {
+  color: #ff9090;
+  border-color: rgba(255, 77, 77, 0.4);
+}
+
+.playlist-container {
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  margin-bottom: 14px;
+}
+
+.playlist-list {
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playlist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.playlist-item.playing {
+  border-color: rgba(60, 210, 150, 0.65);
+  background: rgba(20, 120, 90, 0.25);
+}
+
+.playlist-item-text {
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.playlist-meta {
+  color: var(--text-muted);
+}
+
+.btn-remove-playlist-item {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-remove-playlist-item:hover {
+  color: #ff8c8c;
+  background: rgba(255, 77, 77, 0.15);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+}
+
 .action-btn {
   width: 100%;
   padding: 12px;
@@ -495,6 +603,38 @@ input {
 }
 
 /* Responsive adjustments */
+@media (max-width: 900px) {
+  :root {
+    --sidebar-width: 230px;
+  }
+
+  .logo span {
+    display: none;
+  }
+
+  .content-area {
+    padding: 16px 14px calc(var(--player-bar-height) + 16px);
+  }
+}
+
+@media (max-width: 650px) {
+  :root {
+    --sidebar-width: 200px;
+  }
+
+  .drawer-content {
+    padding: 14px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 480px) {
   .verse-arabic {
     font-size: 1.6rem;

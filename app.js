@@ -5,7 +5,7 @@
 
 // --- App Logic is loaded from logic.js ---
 if (typeof AppLogic === 'undefined') {
-  console.error('CRITICAL: logic.js not loaded!');
+  throw new Error('CRITICAL: logic.js not loaded!');
 }
 
 // --- State Management ---
@@ -150,8 +150,7 @@ function loadSettings() {
         state.activePlaylistId = settings.activePlaylistId;
       } else if (settings.playlist && Array.isArray(settings.playlist)) {
         // Migrate old single playlist
-        console.log('Migrating legacy playlist...');
-        const defaultId = Date.now();
+        const defaultId = generateUniquePlaylistId();
         state.playlists = [
           {
             id: defaultId,
@@ -162,7 +161,7 @@ function loadSettings() {
         state.activePlaylistId = defaultId;
       } else {
         // Initialize fresh if nothing exists
-        const defaultId = Date.now();
+        const defaultId = generateUniquePlaylistId();
         state.playlists = [
           {
             id: defaultId,
@@ -173,18 +172,7 @@ function loadSettings() {
         state.activePlaylistId = defaultId;
       }
 
-      // Ensure at least one playlist exists
-      if (state.playlists.length === 0) {
-        const defaultId = Date.now();
-        state.playlists = [
-          {
-            id: defaultId,
-            name: 'My Playlist',
-            items: [],
-          },
-        ];
-        state.activePlaylistId = defaultId;
-      }
+      ensureActivePlaylist();
 
       // Apply to UI
       ui.startVerseInput.value = state.startVerse;
@@ -201,8 +189,9 @@ function loadSettings() {
       renderPlaylist();
 
       return true; // Settings loaded
-    } catch (e) {
-      console.error('Error loading settings', e);
+    } catch {
+      state.playlists = [];
+      state.activePlaylistId = null;
     }
   }
   return false;
@@ -217,8 +206,7 @@ function loadMemorization() {
   if (saved) {
     try {
       state.memorization = JSON.parse(saved);
-    } catch (e) {
-      console.error('Error loading memorization', e);
+    } catch {
       state.memorization = {};
     }
   }
@@ -233,8 +221,7 @@ function loadGoals() {
   if (saved) {
     try {
       state.goals = JSON.parse(saved);
-    } catch (e) {
-      console.error('Error loading goals', e);
+    } catch {
       state.goals = [];
     }
   }
@@ -242,8 +229,6 @@ function loadGoals() {
 
 // --- Initialization ---
 async function init() {
-  console.log('Initializing Quran Loop App...');
-
   try {
     await Promise.all([fetchReciters(), fetchChapters()]);
 
@@ -277,22 +262,10 @@ async function init() {
         handleSurahChange(state.chapters[0].id);
       }
 
-      // Initialize default playlist if none exists
-      if (state.playlists.length === 0) {
-        const defaultId = Date.now();
-        state.playlists = [
-          {
-            id: defaultId,
-            name: 'My Playlist',
-            items: [],
-          },
-        ];
-        state.activePlaylistId = defaultId;
-        updatePlaylistSelectOptions();
-      }
+      ensureActivePlaylist();
+      updatePlaylistSelectOptions();
     }
-  } catch (error) {
-    console.error('Initialization Failed:', error);
+  } catch {
     alert(
       'Failed to load initial data. Please check your internet connection.'
     );
@@ -364,8 +337,7 @@ async function fetchVerses(surahId) {
     }));
 
     renderVerses();
-  } catch (e) {
-    console.error('Failed to fetch verses', e);
+  } catch {
     ui.versesContainer.innerHTML =
       '<div class="verse-item placeholder"><p>Error loading text.</p></div>';
   }
@@ -485,7 +457,6 @@ function highlightVerse(verseNum) {
     // Simple scrollIntoView works better in this simplified layout
     // but let's stick to the manual calculation to be safe centering
 
-    const elTop = el.offsetTop;
     const elHeight = el.offsetHeight;
     const containerHeight = container.clientHeight;
 
@@ -555,6 +526,8 @@ function setupEventListeners() {
   // Play/Pause
   ui.btnPlay.addEventListener('click', togglePlay);
   ui.btnStop.addEventListener('click', stopPlayback);
+  ui.btnPrev.addEventListener('click', playPrevious);
+  ui.btnNext.addEventListener('click', playNext);
 
   // Speed Control
   ui.btnSpeed.addEventListener('click', () => {
@@ -564,7 +537,7 @@ function setupEventListeners() {
 
   // Controls +/-
   ui.controlBtns.forEach((btn) => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-target');
       const input = document.getElementById(targetId);
       const isPlus = btn.classList.contains('plus');
@@ -596,8 +569,7 @@ function setupEventListeners() {
 
   // Audio
   state.audio.addEventListener('ended', handleVerseEnd);
-  state.audio.addEventListener('error', (e) => {
-    console.error('Audio Error', e);
+  state.audio.addEventListener('error', () => {
     stopPlayback();
   });
 
@@ -629,19 +601,16 @@ function setupEventListeners() {
   const btnToggle = document.getElementById('btn-toggle-settings');
   const btnClose = document.getElementById('btn-close-settings');
 
-  function toggleDrawer(show) {
-    if (show) {
-      drawer.classList.add('open');
-      overlay.classList.add('open');
-    } else {
-      drawer.classList.remove('open');
-      overlay.classList.remove('open');
-    }
+  function toggleDrawer() {
+    if (drawer) drawer.classList.add('open');
+    if (overlay) overlay.classList.remove('open');
   }
 
-  if (btnToggle) btnToggle.addEventListener('click', () => toggleDrawer(true));
-  if (btnClose) btnClose.addEventListener('click', () => toggleDrawer(false));
-  if (overlay) overlay.addEventListener('click', () => toggleDrawer(false));
+  toggleDrawer();
+
+  if (btnToggle) btnToggle.addEventListener('click', toggleDrawer);
+  if (btnClose) btnClose.addEventListener('click', toggleDrawer);
+  if (overlay) overlay.addEventListener('click', toggleDrawer);
 
   // Playlist Mode Toggles
   ui.btnModeRange.addEventListener('click', () => switchMode('RANGE'));
@@ -660,6 +629,39 @@ function setupEventListeners() {
   ui.btnClearPlaylist.addEventListener('click', clearPlaylist);
 
   ui.btnPlayPlaylist.addEventListener('click', () => startPlayback());
+
+  // Create Playlist
+  if (ui.btnCreatePlaylist) {
+    ui.btnCreatePlaylist.addEventListener('click', createPlaylist);
+  }
+
+  // Rename Playlist
+  if (ui.btnRenamePlaylist) {
+    ui.btnRenamePlaylist.addEventListener('click', renamePlaylist);
+  }
+
+  // Delete Playlist
+  if (ui.btnDeletePlaylist) {
+    ui.btnDeletePlaylist.addEventListener('click', deletePlaylist);
+  }
+
+  // Merge Playlist
+  if (ui.btnMergePlaylist) {
+    ui.btnMergePlaylist.addEventListener('click', mergePlaylists);
+  }
+
+  // Playlist Selector Change
+  if (ui.playlistSelect) {
+    ui.playlistSelect.addEventListener('change', (e) => {
+      const selectedId = Number(e.target.value);
+      state.activePlaylistId = Number.isFinite(selectedId)
+        ? selectedId
+        : state.playlists[0]?.id;
+      ensureActivePlaylist();
+      saveSettings();
+      renderPlaylist();
+    });
+  }
 
   // Import Playlist
   if (ui.btnImportPlaylist && ui.importPlaylistFile) {
@@ -771,10 +773,78 @@ if (btnHardReset) {
 
 // --- Playlist Logic ---
 
+function generateUniquePlaylistId(extraUsedIds = new Set()) {
+  const existingIds = new Set(
+    state.playlists
+      .map((playlist) => Number(playlist?.id))
+      .filter((id) => Number.isFinite(id))
+  );
+
+  extraUsedIds.forEach((id) => existingIds.add(id));
+
+  let id = Date.now();
+  while (existingIds.has(id)) id += 1;
+
+  return id;
+}
+
+function ensureActivePlaylist() {
+  if (!Array.isArray(state.playlists)) {
+    state.playlists = [];
+  }
+
+  const sanitized = [];
+  const usedIds = new Set();
+  const validPlaylists = state.playlists.filter(
+    (playlist) => playlist && typeof playlist === 'object'
+  );
+
+  for (let index = validPlaylists.length - 1; index >= 0; index -= 1) {
+    const playlist = validPlaylists[index];
+
+    let id = Number(playlist.id);
+    if (!Number.isFinite(id) || usedIds.has(id)) {
+      id = generateUniquePlaylistId(usedIds);
+    }
+    usedIds.add(id);
+
+    const name =
+      typeof playlist.name === 'string' && playlist.name.trim()
+        ? playlist.name.trim()
+        : `Playlist ${index + 1}`;
+
+    sanitized.unshift({
+      id,
+      name,
+      items: Array.isArray(playlist.items) ? playlist.items : [],
+    });
+  }
+
+  state.playlists = sanitized;
+
+  if (state.playlists.length === 0) {
+    const defaultId = generateUniquePlaylistId();
+    state.playlists = [
+      {
+        id: defaultId,
+        name: 'My Playlist',
+        items: [],
+      },
+    ];
+    state.activePlaylistId = defaultId;
+    return;
+  }
+
+  const activeId = Number(state.activePlaylistId);
+  const hasActivePlaylist = state.playlists.some((p) => p.id === activeId);
+  state.activePlaylistId = hasActivePlaylist ? activeId : state.playlists[0].id;
+}
+
 /**
  * Helper to get the active playlist object
  */
 function getActivePlaylist() {
+  ensureActivePlaylist();
   return state.playlists.find((p) => p.id === state.activePlaylistId);
 }
 
@@ -811,6 +881,7 @@ function switchMode(newMode) {
 
 function updatePlaylistSelectOptions() {
   if (!ui.playlistSelect) return;
+  ensureActivePlaylist();
 
   ui.playlistSelect.innerHTML = '';
   state.playlists.forEach((pl) => {
@@ -825,11 +896,13 @@ function updatePlaylistSelectOptions() {
 function createPlaylist() {
   const name =
     window.QURAN_TEST_PROMPT || prompt('Enter playlist name:', 'New Playlist');
-  if (name) {
-    const newId = Date.now();
+  const normalizedName = name ? String(name).trim() : '';
+
+  if (normalizedName) {
+    const newId = generateUniquePlaylistId();
     state.playlists.push({
       id: newId,
-      name: name,
+      name: normalizedName,
       items: [],
     });
     state.activePlaylistId = newId;
@@ -842,11 +915,12 @@ function createPlaylist() {
 function renamePlaylist() {
   const active = getActivePlaylist();
   if (!active) return;
-
   const newName =
-    window.testPromptValue || prompt('Rename playlist:', active.name);
-  if (newName) {
-    active.name = newName;
+    window.QURAN_TEST_PROMPT || prompt('Rename playlist:', active.name);
+  const normalizedName = newName ? String(newName).trim() : '';
+
+  if (normalizedName) {
+    active.name = normalizedName;
     saveSettings();
     updatePlaylistSelectOptions();
   }
@@ -884,7 +958,7 @@ function mergePlaylists() {
   // Let's iterate and ask user which one to merge.
 
   // Refinement: Prompt user to choose index from list string.
-  let msg = `Select playlist to merge INTO "${active.name}":\n`;
+  let msg = `Select playlist to merge FROM into "${active.name}":\n`;
   const others = state.playlists.filter((p) => p.id !== active.id);
   others.forEach((p, idx) => {
     msg += `${idx + 1}. ${p.name}\n`;
@@ -987,25 +1061,26 @@ async function handlePlaylistImport(event) {
         'Import successful! Name this playlist:',
         file.name.replace('.json', '')
       );
-      if (name) {
-        const newId = Date.now();
+      const normalizedName = name ? String(name).trim() : '';
+
+      if (normalizedName) {
+        const newId = generateUniquePlaylistId();
         state.playlists.push({
           id: newId,
-          name: name,
+          name: normalizedName,
           items: newItems,
         });
         state.activePlaylistId = newId;
         saveSettings();
         updatePlaylistSelectOptions();
         renderPlaylist();
-        alert(`Imported ${newItems.length} verses into "${name}".`);
+        alert(`Imported ${newItems.length} verses into "${normalizedName}".`);
       }
     } else {
       alert('No valid verses found in the file.');
     }
-  } catch (e) {
-    console.error('Import Error', e);
-    alert('Failed to import playlist. Check console for details.');
+  } catch {
+    alert('Failed to import playlist. Please verify the file format.');
   } finally {
     event.target.value = ''; // Reset input
   }
@@ -1154,6 +1229,38 @@ function togglePlay() {
   }
 }
 
+function navigatePlayback(direction) {
+  const isNext = direction > 0;
+
+  if (state.mode === 'PLAYLIST') {
+    const active = getActivePlaylist();
+    if (!active || active.items.length === 0) return;
+
+    const maxIndex = active.items.length - 1;
+    state.playlistIndex = isNext
+      ? Math.min(maxIndex, state.playlistIndex + 1)
+      : Math.max(0, state.playlistIndex - 1);
+  } else {
+    const totalVerses = Math.max(1, state.endVerse - state.startVerse + 1);
+    const maxIndex = totalVerses - 1;
+    state.currentVerseIndex = isNext
+      ? Math.min(maxIndex, state.currentVerseIndex + 1)
+      : Math.max(0, state.currentVerseIndex - 1);
+  }
+
+  state.currentVerseLoopCount = 0;
+  state.currentRangeLoopCount = 0;
+  playCurrentVerse();
+}
+
+function playPrevious() {
+  navigatePlayback(-1);
+}
+
+function playNext() {
+  navigatePlayback(1);
+}
+
 function startPlayback() {
   if (state.mode === 'PLAYLIST') {
     const active = getActivePlaylist();
@@ -1298,7 +1405,6 @@ function handleVerseEnd() {
   if (result.action === 'STOP') {
     // Range finished or stop requested
     stopPlayback();
-    console.log('Loop finished');
   } else {
     // Apply new state
     state.currentVerseIndex = result.state.verseIndex;

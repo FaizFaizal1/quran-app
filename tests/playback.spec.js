@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Playback Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
     await page.goto('/');
     // Ensure verses are loaded (ignore placeholder)
     await page.waitForSelector('.verse-number');
@@ -51,17 +50,15 @@ test.describe('Playback Functionality', () => {
     // Verify player info updates (Verse 2)
     // The details text is "Verse <Num> / <Total>"
     const details = await page.locator('#np-details').textContent();
-    console.log('Details text:', details);
 
     if (details.includes('/ 1')) {
-      console.log(
-        'Use warning: Only 1 verse loaded - skipping next/prev verification'
-      );
-    } else {
-      await expect(page.locator('#np-details')).toContainText('Verse 2');
-      // Click Prev
-      await page.click('#btn-prev');
-      await expect(page.locator('#np-details')).toContainText('Verse 1');
+      // Only 1 verse loaded - skipping next/prev verification
+      return;
     }
+
+    await expect(page.locator('#np-details')).toContainText('Verse 2');
+    // Click Prev
+    await page.click('#btn-prev');
+    await expect(page.locator('#np-details')).toContainText('Verse 1');
   });
 });
