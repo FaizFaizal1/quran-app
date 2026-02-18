@@ -14,5 +14,11 @@ export default [
       "no-console": "warn",
       "no-undef": "off"
     }
+  },
+  {
+    files: ["scripts/**/*.mjs", "scripts/**/*.js"],
+    rules: {
+      "no-console": "off"
+    }
   }
 ];
