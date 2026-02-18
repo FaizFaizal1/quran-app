@@ -12,9 +12,10 @@
     "lint:ci": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
+    "prepare": "husky && npm run build",
     "start": "python3 -m http.server 8000",
     "build": "node scripts/build.mjs",
+    "build:do": "npm run build",
     "heroku-postbuild": "npm run build",
     "cap:sync": "npm run build && npx cap sync"
   },
