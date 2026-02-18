@@ -48,6 +48,8 @@ const state = {
   currentRangeLoopCount: 0,
   playbackRate: 1.0, // Default Speed
   hasTouchedEndVerse: false, // Track manual interaction
+  currentAudioUrl: '',
+  currentAudioAttempt: 0,
 
   // Audio Object
   audio: document.getElementById('audio-player'),
@@ -114,6 +116,100 @@ const ui = {
   btnAddGoal: document.getElementById('btn-add-goal'),
   goalsList: document.getElementById('goals-list'),
 };
+
+const STORAGE_KEYS = {
+  chapters: 'quranChaptersCache',
+  versesPrefix: 'quranVersesCache:',
+};
+
+const FETCH_RETRY_COUNT = 2;
+const FETCH_TIMEOUT_MS = 10000;
+const AUDIO_RETRY_COUNT = 1;
+const AUDIO_TIMEOUT_MS = 8000;
+
+let audioRecoveryTimeoutId = null;
+
+async function fetchWithRetry(url, options = {}) {
+  const { retries = FETCH_RETRY_COUNT, timeoutMs = FETCH_TIMEOUT_MS } = options;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+      return response;
+    } catch {
+      if (attempt === retries) throw new Error('Request failed after retries');
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  throw new Error('Unreachable');
+}
+
+function clearAudioRecoveryTimeout() {
+  if (audioRecoveryTimeoutId) {
+    clearTimeout(audioRecoveryTimeoutId);
+    audioRecoveryTimeoutId = null;
+  }
+}
+
+async function attemptAudioPlayback(url, attempt = 0) {
+  if (!state.isPlaying) return;
+
+  if (attempt > AUDIO_RETRY_COUNT) {
+    clearAudioRecoveryTimeout();
+    stopPlayback();
+    alert(
+      'Audio could not be loaded. Please check your network and try again.'
+    );
+    return;
+  }
+
+  state.currentAudioUrl = url;
+  state.currentAudioAttempt = attempt;
+  clearAudioRecoveryTimeout();
+
+  state.audio.src = url;
+  state.audio.playbackRate = state.playbackRate;
+
+  audioRecoveryTimeoutId = setTimeout(() => {
+    attemptAudioPlayback(url, attempt + 1);
+  }, AUDIO_TIMEOUT_MS);
+
+  try {
+    await state.audio.play();
+  } catch {
+    attemptAudioPlayback(url, attempt + 1);
+  }
+}
+
+function shouldRegisterServiceWorker() {
+  if (!('serviceWorker' in navigator)) return false;
+  if (navigator.webdriver) return false;
+
+  const isLocalhost =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+  if (!isLocalhost && window.location.protocol !== 'https:') return false;
+
+  return true;
+}
+
+function registerServiceWorker() {
+  if (!shouldRegisterServiceWorker()) return;
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // fail silently to avoid blocking app usage
+    });
+  });
+}
 
 // --- Persistence ---
 
@@ -230,6 +326,8 @@ function loadGoals() {
 // --- Initialization ---
 async function init() {
   try {
+    registerServiceWorker();
+
     await Promise.all([fetchReciters(), fetchChapters()]);
 
     loadMemorization();
@@ -293,14 +391,25 @@ async function fetchReciters() {
 }
 
 async function fetchChapters() {
-  const response = await fetch('https://api.quran.com/api/v4/chapters');
-  const data = await response.json();
+  try {
+    const response = await fetchWithRetry(
+      'https://api.quran.com/api/v4/chapters'
+    );
+    const data = await response.json();
 
-  state.chapters = data.chapters.map((ch) => ({
-    id: ch.id,
-    name: `${ch.id}. ${ch.name_simple} (${ch.translated_name.name})`,
-    verses_count: ch.verses_count,
-  }));
+    state.chapters = data.chapters.map((ch) => ({
+      id: ch.id,
+      name: `${ch.id}. ${ch.name_simple} (${ch.translated_name.name})`,
+      verses_count: ch.verses_count,
+    }));
+
+    localStorage.setItem(STORAGE_KEYS.chapters, JSON.stringify(state.chapters));
+  } catch {
+    const cached = localStorage.getItem(STORAGE_KEYS.chapters);
+    if (!cached) throw new Error('Unable to load chapter list');
+
+    state.chapters = JSON.parse(cached);
+  }
 
   populateSelect(ui.surahSelect, state.chapters, 'id', 'name');
 }
@@ -314,10 +423,10 @@ async function fetchVerses(surahId) {
     // Fetch Arabic (Uthmani) and Translation (Saheeh International: 131) in parallel
     // We use per_page=300 to fetch all verses in one go (max surah length is 286)
     const [arabicRes, transRes] = await Promise.all([
-      fetch(
+      fetchWithRetry(
         `https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${surahId}&per_page=300`
       ),
-      fetch(
+      fetchWithRetry(
         `https://api.quran.com/api/v4/quran/translations/131?chapter_number=${surahId}&per_page=300`
       ),
     ]);
@@ -336,8 +445,22 @@ async function fetchVerses(surahId) {
       translation: transVerses[i] ? transVerses[i].text : '',
     }));
 
+    localStorage.setItem(
+      `${STORAGE_KEYS.versesPrefix}${surahId}`,
+      JSON.stringify(state.versesData)
+    );
+
     renderVerses();
   } catch {
+    const cached = localStorage.getItem(
+      `${STORAGE_KEYS.versesPrefix}${surahId}`
+    );
+    if (cached) {
+      state.versesData = JSON.parse(cached);
+      renderVerses();
+      return;
+    }
+
     ui.versesContainer.innerHTML =
       '<div class="verse-item placeholder"><p>Error loading text.</p></div>';
   }
@@ -569,8 +692,14 @@ function setupEventListeners() {
 
   // Audio
   state.audio.addEventListener('ended', handleVerseEnd);
+  state.audio.addEventListener('playing', clearAudioRecoveryTimeout);
   state.audio.addEventListener('error', () => {
-    stopPlayback();
+    if (!state.isPlaying || !state.currentAudioUrl) {
+      stopPlayback();
+      return;
+    }
+
+    attemptAudioPlayback(state.currentAudioUrl, state.currentAudioAttempt + 1);
   });
 
   // Goals Events
@@ -1288,6 +1417,7 @@ function startPlayback() {
 
 function pausePlayback() {
   state.isPlaying = false;
+  clearAudioRecoveryTimeout();
   updatePlayButton();
   state.audio.pause();
 }
@@ -1297,6 +1427,9 @@ function stopPlayback() {
   state.audio.pause();
   state.audio.currentTime = 0;
   state.audio.playbackRate = state.playbackRate; // Reset rate just in case
+  clearAudioRecoveryTimeout();
+  state.currentAudioUrl = '';
+  state.currentAudioAttempt = 0;
 
   // Reset Counters
   state.currentVerseIndex = 0;
@@ -1367,9 +1500,7 @@ function playCurrentVerse() {
     surahId,
     verseNum
   );
-  state.audio.src = url;
-  state.audio.playbackRate = state.playbackRate; // Critical: Apply speed on new source
-  state.audio.play();
+  attemptAudioPlayback(url);
 }
 
 function handleVerseEnd() {
