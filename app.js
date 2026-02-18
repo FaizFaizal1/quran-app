@@ -1768,3 +1768,11 @@ function renderGoals() {
 
 // Initialize App
 window.addEventListener('DOMContentLoaded', init);
+
+// Expose functions for E2E tests
+if (typeof window !== 'undefined') {
+  window.createPlaylist = createPlaylist;
+  window.startPlayback = startPlayback;
+  window.stopPlayback = stopPlayback;
+  window.togglePlay = togglePlay;
+}
