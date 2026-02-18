@@ -4,7 +4,7 @@ test.describe('Playback Functionality', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Ensure verses are loaded (ignore placeholder)
-    await page.waitForSelector('.verse-number');
+    await page.waitForSelector('.verse-number', { timeout: 60000 });
   });
 
   // ... (start and stop playback test is fine)

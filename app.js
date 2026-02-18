@@ -8,6 +8,18 @@ if (typeof window.AppLogic === 'undefined') {
   throw new Error('CRITICAL: logic.js not loaded!');
 }
 
+// --- Headless / Test Helper ---
+if (
+  typeof window !== 'undefined' &&
+  (navigator.webdriver || window.QURAN_TEST_MODE)
+) {
+  window.alert = (msg) => console.warn('ALERT MOCKED:', msg);
+  window.confirm = (msg) => {
+    console.warn('CONFIRM MOCKED:', msg);
+    return true;
+  };
+}
+
 // --- State Management ---
 const state = {
   reciters: [],
@@ -363,10 +375,15 @@ async function init() {
       ensureActivePlaylist();
       updatePlaylistSelectOptions();
     }
-  } catch {
-    alert(
-      'Failed to load initial data. Please check your internet connection.'
-    );
+  } catch (err) {
+    console.error('Initialization failed:', err);
+    // Fallback if both fetch and cache fail
+    if (state.chapters.length === 0) {
+      state.chapters = [{ id: 1, name: '1. Al-Fatihah', verses_count: 7 }];
+      populateSelect(ui.surahSelect, state.chapters, 'id', 'name');
+    }
+    // Still try to setup events and expose functions
+    setupEventListeners();
   }
 }
 

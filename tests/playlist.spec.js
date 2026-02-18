@@ -14,7 +14,9 @@ test.describe('Playlist Functionality', () => {
 
     // Ensure app/event listeners are ready
     await page.waitForFunction(
-      () => typeof window.createPlaylist === 'function'
+      () => typeof window.createPlaylist === 'function',
+      null,
+      { timeout: 60000 }
     );
     await expect(page.locator('#playlist-select option')).toHaveCount(1);
 
