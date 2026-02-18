@@ -2,7 +2,6 @@
   "name": "quran-app",
   "version": "1.0.0",
   "description": "![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-stable-success)",
-  "main": "app.js",
   "directories": {
     "test": "tests"
   },
@@ -16,6 +15,7 @@
     "prepare": "husky",
     "start": "python3 -m http.server 8000",
     "build": "node scripts/build.mjs",
+    "heroku-postbuild": "npm run build",
     "cap:sync": "npm run build && npx cap sync"
   },
   "lint-staged": {
@@ -36,7 +36,6 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
-    "esbuild": "^0.25.10",
     "eslint": "^10.0.0",
     "globals": "^17.3.0",
     "husky": "^9.1.7",
@@ -47,7 +46,8 @@
   "dependencies": {
     "@capacitor/android": "^8.0.1",
     "@capacitor/cli": "^8.0.1",
-    "@capacitor/core": "^8.0.1"
+    "@capacitor/core": "^8.0.1",
+    "esbuild": "^0.25.10"
   },
   "engines": {
     "node": ">=22.0.0"

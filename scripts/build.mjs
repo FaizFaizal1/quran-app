@@ -17,11 +17,12 @@ async function buildApp() {
     cp(path.join(rootDir, 'style.css'), path.join(distDir, 'style.css')),
     cp(path.join(rootDir, 'manifest.json'), path.join(distDir, 'manifest.json')),
     cp(path.join(rootDir, 'sw.js'), path.join(distDir, 'sw.js')),
+    cp(path.join(rootDir, 'icons'), path.join(distDir, 'icons'), { recursive: true }),
   ]);
 
   const sourceHtml = await readFile(path.join(rootDir, 'index.html'), 'utf8');
   const bundledHtml = sourceHtml.replace(
-    /<script src="logic\.js"><\/script>\s*<!-- App Logic -->\s*<script src="app\.js"><\/script>/,
+    /<!-- Core Logic -->\s*<script src="logic\.js"><\/script>\s*<!-- App Logic -->\s*<script src="app\.js"><\/script>/,
     '<script defer src="assets/app.bundle.js"></script>'
   );
 
@@ -39,4 +40,7 @@ async function buildApp() {
   });
 }
 
-buildApp();
+buildApp().catch((err) => {
+  console.error('Build failed:', err);
+  process.exit(1);
+});
