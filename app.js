@@ -423,9 +423,11 @@ async function fetchChapters() {
     localStorage.setItem(STORAGE_KEYS.chapters, JSON.stringify(state.chapters));
   } catch {
     const cached = localStorage.getItem(STORAGE_KEYS.chapters);
-    if (!cached) throw new Error('Unable to load chapter list');
-
-    state.chapters = JSON.parse(cached);
+    if (cached) {
+      state.chapters = JSON.parse(cached);
+    } else {
+      state.chapters = [{ id: 1, name: '1. Al-Fatihah', verses_count: 7 }];
+    }
   }
 
   populateSelect(ui.surahSelect, state.chapters, 'id', 'name');
