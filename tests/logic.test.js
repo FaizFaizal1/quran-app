@@ -1,6 +1,22 @@
 const AppLogic = require('../logic.js');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
 describe('AppLogic', () => {
+  describe('module/browser exposure', () => {
+    test('exposes AppLogic on window even when module.exports exists', () => {
+      const logicSource = fs.readFileSync(
+        path.join(__dirname, '..', 'logic.js'),
+        'utf8'
+      );
+      const sandbox = { module: { exports: {} }, window: {} };
+      vm.runInNewContext(logicSource, sandbox);
+      expect(sandbox.module.exports.constructAudioUrl).toBeDefined();
+      expect(sandbox.window.AppLogic.constructAudioUrl).toBeDefined();
+    });
+  });
+
   // --- Range Validation ---
   describe('validateRange', () => {
     test('validates correct range', () => {
