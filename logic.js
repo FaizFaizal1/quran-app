@@ -168,9 +168,10 @@ const AppLogic = {
   },
 };
 
-// Export (Node.js) or Expose (Browser)
+// Export (Node.js) and expose (Browser)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = AppLogic;
-} else {
+}
+if (typeof window !== 'undefined') {
   window.AppLogic = AppLogic;
 }
