@@ -38,6 +38,11 @@ const AppLogic = {
   constructAudioUrl: (reciterId, surahId, verseId) => {
     const surahPad = String(surahId).padStart(3, '0');
     const versePad = String(verseId).padStart(3, '0');
+
+    if (reciterId === 'minshawi_mushaf_muallim') {
+      return `https://mp3quran.net/minshawi_mushaf/${surahPad}.mp3`;
+    }
+
     return `https://everyayah.com/data/${reciterId}/${surahPad}${versePad}.mp3`;
   },
 
@@ -168,10 +173,10 @@ const AppLogic = {
   },
 };
 
-// Export (Node.js) and expose (Browser)
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = AppLogic;
-}
+// Export (Node.js) or Expose (Browser)
 if (typeof window !== 'undefined') {
   window.AppLogic = AppLogic;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = AppLogic;
 }

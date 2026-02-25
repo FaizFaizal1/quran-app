@@ -399,6 +399,14 @@ async function fetchReciters() {
     { id: 'Husary_128kbps', name: 'Mahmoud Khalil Al-Husary' },
     { id: 'Ghamadi_40kbps', name: 'Saad Al-Ghamdi' },
     { id: 'Hudhaify_128kbps', name: 'Ali Al-Hudhaify' },
+    {
+      id: 'Husary_(Muallim)_128kbps',
+      name: 'Mahmoud Khalil Al-Husary (Muallim)',
+    },
+    {
+      id: 'minshawi_mushaf_muallim',
+      name: 'Muhammad Siddiq Al-Minshawi (Mushaf Muallim)',
+    },
   ];
 
   state.reciters = curatedReciters;
@@ -750,15 +758,28 @@ function setupEventListeners() {
   const btnClose = document.getElementById('btn-close-settings');
 
   function toggleDrawer() {
-    if (drawer) drawer.classList.add('open');
-    if (overlay) overlay.classList.remove('open');
+    if (drawer) drawer.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('open');
   }
 
-  toggleDrawer();
+  // Remove immediate call to keep default state (Hidden on mobile, Visible on desktop)
+  // toggleDrawer();
 
   if (btnToggle) btnToggle.addEventListener('click', toggleDrawer);
-  if (btnClose) btnClose.addEventListener('click', toggleDrawer);
-  if (overlay) overlay.addEventListener('click', toggleDrawer);
+
+  // Close button should specifically close
+  if (btnClose)
+    btnClose.addEventListener('click', () => {
+      if (drawer) drawer.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+    });
+
+  // Overlay click should close
+  if (overlay)
+    overlay.addEventListener('click', () => {
+      if (drawer) drawer.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+    });
 
   // Playlist Mode Toggles
   ui.btnModeRange.addEventListener('click', () => switchMode('RANGE'));
