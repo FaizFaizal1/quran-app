@@ -171,6 +171,21 @@ const AppLogic = {
       playbackRate: state.playbackRate,
     };
   },
+
+  /**
+   * Escapes HTML special characters in a string.
+   * @param {string} str - String to escape
+   * @returns {string} Escaped string
+   */
+  escapeHTML: (str) => {
+    if (typeof str !== 'string') return str;
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
 };
 
 // Export (Node.js) or Expose (Browser)
