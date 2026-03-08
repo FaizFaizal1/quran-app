@@ -13,9 +13,9 @@ if (
   typeof window !== 'undefined' &&
   (navigator.webdriver || window.QURAN_TEST_MODE)
 ) {
-  window.alert = (msg) => console.warn('ALERT MOCKED:', msg);
+  window.alert = (msg) => console.warn('ALERT MOCKED:', msg); // eslint-disable-line no-console
   window.confirm = (msg) => {
-    console.warn('CONFIRM MOCKED:', msg);
+    console.warn('CONFIRM MOCKED:', msg); // eslint-disable-line no-console
     return true;
   };
 }
@@ -376,7 +376,7 @@ async function init() {
       updatePlaylistSelectOptions();
     }
   } catch (err) {
-    console.error('Initialization failed:', err);
+    console.error('Initialization failed:', err); // eslint-disable-line no-console
     // Fallback if both fetch and cache fail
     if (state.chapters.length === 0) {
       state.chapters = [{ id: 1, name: '1. Al-Fatihah', verses_count: 7 }];
