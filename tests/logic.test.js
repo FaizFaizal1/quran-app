@@ -104,6 +104,72 @@ describe('AppLogic', () => {
 
       expect(next.action).toBe('STOP');
     });
+
+    describe('PLAYLIST mode', () => {
+      const playlistSettings = {
+        verseRepeat: 2,
+        rangeRepeat: 2,
+        playlistLength: 2,
+      };
+
+      test('Action: PLAY - repeats verse in playlist', () => {
+        const current = {
+          mode: 'PLAYLIST',
+          playlistIndex: 0,
+          verseIndex: 0,
+          verseLoopCount: 0,
+          rangeLoopCount: 0,
+        };
+        const next = AppLogic.calculateNextState(current, playlistSettings);
+
+        expect(next.action).toBe('PLAY');
+        expect(next.state.verseLoopCount).toBe(1);
+        expect(next.state.playlistIndex).toBe(0);
+      });
+
+      test('Action: PLAY - next item in playlist', () => {
+        const current = {
+          mode: 'PLAYLIST',
+          playlistIndex: 0,
+          verseIndex: 0,
+          verseLoopCount: 1,
+          rangeLoopCount: 0,
+        };
+        const next = AppLogic.calculateNextState(current, playlistSettings);
+
+        expect(next.action).toBe('PLAY');
+        expect(next.state.playlistIndex).toBe(1);
+        expect(next.state.verseLoopCount).toBe(0);
+      });
+
+      test('Action: PLAY - restarts playlist', () => {
+        const current = {
+          mode: 'PLAYLIST',
+          playlistIndex: 1,
+          verseIndex: 0,
+          verseLoopCount: 1,
+          rangeLoopCount: 0,
+        };
+        const next = AppLogic.calculateNextState(current, playlistSettings);
+
+        expect(next.action).toBe('PLAY');
+        expect(next.state.playlistIndex).toBe(0);
+        expect(next.state.rangeLoopCount).toBe(1);
+      });
+
+      test('Action: STOP - all done in playlist', () => {
+        const current = {
+          mode: 'PLAYLIST',
+          playlistIndex: 1,
+          verseIndex: 0,
+          verseLoopCount: 1,
+          rangeLoopCount: 1,
+        };
+        const next = AppLogic.calculateNextState(current, playlistSettings);
+
+        expect(next.action).toBe('STOP');
+      });
+    });
   });
 
   // --- Speed Logic ---
@@ -147,6 +213,25 @@ describe('AppLogic', () => {
         rangeRepeat: 1,
         playbackRate: 1.25,
       });
+    });
+  });
+
+  // --- HTML Escaping ---
+  describe('escapeHTML', () => {
+    test('escapes special characters', () => {
+      const input = '<img src=x onerror="alert(1)"> & some text';
+      const expected =
+        '&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &amp; some text';
+      expect(AppLogic.escapeHTML(input)).toBe(expected);
+    });
+
+    test('handles non-string inputs', () => {
+      expect(AppLogic.escapeHTML(123)).toBe(123);
+      expect(AppLogic.escapeHTML(null)).toBe(null);
+    });
+
+    test('escapes single quotes', () => {
+      expect(AppLogic.escapeHTML("'test'")).toBe('&#39;test&#39;');
     });
   });
 });

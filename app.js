@@ -13,10 +13,12 @@ if (
   typeof window !== 'undefined' &&
   (navigator.webdriver || window.QURAN_TEST_MODE)
 ) {
-  // eslint-disable-next-line no-console
-  window.alert = (msg) => console.warn('ALERT MOCKED:', msg);
+  window.alert = (msg) => {
+    /* eslint-disable-next-line no-console */
+    console.warn('ALERT MOCKED:', msg);
+  };
   window.confirm = (msg) => {
-    // eslint-disable-next-line no-console
+    /* eslint-disable-next-line no-console */
     console.warn('CONFIRM MOCKED:', msg);
     return true;
   };
@@ -378,7 +380,7 @@ async function init() {
       updatePlaylistSelectOptions();
     }
   } catch (err) {
-    // eslint-disable-next-line no-console
+    /* eslint-disable-next-line no-console */
     console.error('Initialization failed:', err);
     // Fallback if both fetch and cache fail
     if (state.chapters.length === 0) {
@@ -511,8 +513,8 @@ function renderVerses() {
                     <i class="fa-solid fa-list-ul"></i>
                 </button>
             </div>
-            <p class="verse-arabic">${verse.text}</p>
-            <p class="verse-translation">${verse.translation}</p>
+            <p class="verse-arabic">${AppLogic.escapeHTML(verse.text)}</p>
+            <p class="verse-translation">${AppLogic.escapeHTML(verse.translation)}</p>
             
             <div class="verse-actions" style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
                 <label class="memorize-control">
@@ -764,9 +766,6 @@ function setupEventListeners() {
     if (drawer) drawer.classList.toggle('open');
     if (overlay) overlay.classList.toggle('open');
   }
-
-  // Remove immediate call to keep default state (Hidden on mobile, Visible on desktop)
-  // toggleDrawer();
 
   if (btnToggle) btnToggle.addEventListener('click', toggleDrawer);
 
@@ -1373,7 +1372,7 @@ function renderPlaylist() {
     div.innerHTML = `
             <div class="playlist-item-text">
                 <span class="playlist-index">${index + 1}.</span> 
-                ${surahName} <span class="playlist-meta">${item.surahId}:${item.verseNum}</span>
+                ${AppLogic.escapeHTML(surahName)} <span class="playlist-meta">${item.surahId}:${item.verseNum}</span>
             </div>
             <button class="btn-remove-playlist-item" data-index="${index}">
                 <i class="fa-solid fa-times"></i>
@@ -1775,7 +1774,7 @@ function renderGoals() {
     div.innerHTML = `
             <div class="goal-header">
                 <div class="goal-title">
-                    <span>${surahName}</span>
+                    <span>${AppLogic.escapeHTML(surahName)}</span>
                     <span class="goal-range">Verses ${goal.start} - ${goal.end}</span>
                 </div>
                 <div class="goal-actions">
