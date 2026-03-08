@@ -13,8 +13,10 @@ if (
   typeof window !== 'undefined' &&
   (navigator.webdriver || window.QURAN_TEST_MODE)
 ) {
+  // eslint-disable-next-line no-console
   window.alert = (msg) => console.warn('ALERT MOCKED:', msg);
   window.confirm = (msg) => {
+    // eslint-disable-next-line no-console
     console.warn('CONFIRM MOCKED:', msg);
     return true;
   };
@@ -376,6 +378,7 @@ async function init() {
       updatePlaylistSelectOptions();
     }
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error('Initialization failed:', err);
     // Fallback if both fetch and cache fail
     if (state.chapters.length === 0) {
