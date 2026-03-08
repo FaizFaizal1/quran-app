@@ -3,52 +3,87 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-success)
 
-A premium, web-based memorization tool designed to help users loop specific verses or ranges of the Quran. Built with Vanilla JS and CSS variables for a lightweight, fast, and responsive experience.
+A lightweight web app for Quran memorization that lets you repeat verses and verse ranges with precise controls. The project is built with vanilla JavaScript and CSS for a fast load time, and includes PWA + Android (Capacitor) support.
 
 ## Features
 
-- **Premium UI**: Dark mode, glassmorphism design, and mobile-responsive layout.
-- **Advanced Looping**:
-  - **Verse Repeat**: Repeat individual verses $N$ times.
-  - **Range Repeat**: Repeat a sequence of verses $M$ times.
-- **High Quality Audio**: Integrates with [EveryAyah](https://everyayah.com) for verse-by-verse streaming.
-- **Rich Content**: Detailed metadata for all 114 Surahs via [Quran.com API](https://api.quran.com/).
+- Repeat a **single verse** a custom number of times.
+- Repeat a **verse range** a custom number of cycles.
+- Stream verse-by-verse recitation audio (EveryAyah source).
+- Browse rich surah metadata (Quran.com API source).
+- Mobile-friendly UI with dark/premium visual style.
+- Offline-ready basics via service worker/PWA files.
 
-## Quick Start
+## Tech Stack
 
-1.  **Clone the repository**
+- HTML, CSS, Vanilla JavaScript
+- Jest for unit tests
+- Playwright for browser E2E tests
+- ESLint + Prettier for code quality
+- Capacitor for Android packaging
 
-    ```bash
-    git clone https://github.com/yourusername/quran-app.git
-    cd quran-app
-    ```
+## Getting Started
 
-2.  **Open in Browser**
-    Since this is a static site, you can simply open `index.html` in your browser.
+### Prerequisites
 
-    OR use a simple specific server:
+- Node.js 22+ (see `package.json` engines)
+- npm
 
-    ```bash
-    npx serve .
-    ```
+### Install
 
-## Development
+```bash
+npm install
+```
 
-### Project Structure
+### Run locally
 
-- `index.html`: Main entry point and UI structure.
-- `style.css`: All styles (variables, responsive design, animations).
-- `app.js`: Core logic (State, API, Audio Engine).
-- `tests/`: Browser-based test suite.
+```bash
+npm start
+```
 
-### Running Tests
+Then open: <http://localhost:8000>
 
-Open `tests/test.html` in your browser to run the logic verification suite.
+## Development Commands
+
+- `npm run lint` — run ESLint
+- `npm run format:check` — check formatting
+- `npm run test` — run Jest tests
+- `npm run test:ui` — run Playwright tests
+- `npm run build` — produce a production bundle via `scripts/build.mjs`
+- `npm run cap:sync` — build and sync Capacitor Android assets
+
+## Project Structure
+
+- `index.html` — main app shell
+- `app.js` — primary app behavior and UI interaction logic
+- `logic.js` — core pure logic used by tests
+- `style.css` — styling and responsive layout
+- `sw.js` + `manifest.json` — PWA assets
+- `tests/` — Jest and Playwright test suites
+- `android/` — Capacitor Android project
+
+## Testing
+
+Run unit tests:
+
+```bash
+npm test
+```
+
+Run browser tests:
+
+```bash
+npm run test:ui
+```
+
+## Deployment
+
+See deployment notes in [DEPLOY.md](DEPLOY.md).
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow and expectations.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT (project badges may still reference legacy metadata).
