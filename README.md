@@ -5,6 +5,10 @@
 
 A lightweight web app for Quran memorization that lets you repeat verses and verse ranges with precise controls. The project is built with vanilla JavaScript and CSS for a fast load time, and includes PWA + Android (Capacitor) support.
 
+## Live App
+
+Use the hosted version here: <https://quran-app-tdbgd.ondigitalocean.app/>
+
 ## Features
 
 - Repeat a **single verse** a custom number of times.
@@ -22,7 +26,7 @@ A lightweight web app for Quran memorization that lets you repeat verses and ver
 - ESLint + Prettier for code quality
 - Capacitor for Android packaging
 
-## Getting Started
+## Local Development
 
 ### Prerequisites
 
@@ -86,4 +90,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow and expectation
 
 ## License
 
-MIT (project badges may still reference legacy metadata).
+This repository currently declares `ISC` in `package.json`.
