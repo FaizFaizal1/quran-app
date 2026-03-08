@@ -1725,9 +1725,10 @@ function renderGoals() {
     const total = goal.end - goal.start + 1;
     let memorizedCount = 0;
     const surahMem = state.memorization[goal.surahId] || [];
+    const surahMemSet = new Set(surahMem);
 
     for (let i = goal.start; i <= goal.end; i++) {
-      if (surahMem.includes(i)) {
+      if (surahMemSet.has(i)) {
         memorizedCount++;
       }
     }
