@@ -149,4 +149,23 @@ describe('AppLogic', () => {
       });
     });
   });
+
+  // --- HTML Escaping ---
+  describe('escapeHTML', () => {
+    test('escapes special characters', () => {
+      const input = '<img src=x onerror="alert(1)"> & some text';
+      const expected =
+        '&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &amp; some text';
+      expect(AppLogic.escapeHTML(input)).toBe(expected);
+    });
+
+    test('handles non-string inputs', () => {
+      expect(AppLogic.escapeHTML(123)).toBe(123);
+      expect(AppLogic.escapeHTML(null)).toBe(null);
+    });
+
+    test('escapes single quotes', () => {
+      expect(AppLogic.escapeHTML("'test'")).toBe('&#39;test&#39;');
+    });
+  });
 });
