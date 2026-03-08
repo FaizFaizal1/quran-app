@@ -400,11 +400,11 @@ async function fetchReciters() {
     { id: 'Ghamadi_40kbps', name: 'Saad Al-Ghamdi' },
     { id: 'Hudhaify_128kbps', name: 'Ali Al-Hudhaify' },
     {
-      id: 'Husary_(Muallim)_128kbps',
+      id: 'Husary_Muallim_128kbps',
       name: 'Mahmoud Khalil Al-Husary (Muallim)',
     },
     {
-      id: 'minshawi_mushaf_muallim',
+      id: 'Minshawy_Teacher_128kbps',
       name: 'Muhammad Siddiq Al-Minshawi (Mushaf Muallim)',
     },
   ];

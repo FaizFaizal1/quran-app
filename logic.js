@@ -39,10 +39,6 @@ const AppLogic = {
     const surahPad = String(surahId).padStart(3, '0');
     const versePad = String(verseId).padStart(3, '0');
 
-    if (reciterId === 'minshawi_mushaf_muallim') {
-      return `https://mp3quran.net/minshawi_mushaf/${surahPad}.mp3`;
-    }
-
     return `https://everyayah.com/data/${reciterId}/${surahPad}${versePad}.mp3`;
   },
 
