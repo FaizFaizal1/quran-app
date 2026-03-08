@@ -762,9 +762,6 @@ function setupEventListeners() {
     if (overlay) overlay.classList.toggle('open');
   }
 
-  // Remove immediate call to keep default state (Hidden on mobile, Visible on desktop)
-  // toggleDrawer();
-
   if (btnToggle) btnToggle.addEventListener('click', toggleDrawer);
 
   // Close button should specifically close
